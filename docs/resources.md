@@ -12,8 +12,8 @@
 
 ## 统计
 
-- 资料总数 **43** 条：视频 35 · 图文 8
-- 已人工验收 **3** 条 · 待验收 **40** 条 · 已失效 **0** 条
+- 资料总数 **46** 条：视频 35 · 图文 11
+- 已人工验收 **9** 条 · 待验收 **37** 条 · 已失效 **0** 条
 
 ## 按域查看
 
@@ -36,15 +36,18 @@
 | `v-user-groups` | B 站 | 3-3 Linux 用户及用户组创建和管理 | [打开](https://www.bilibili.com/video/BV1tZ4y1e7qa/) | 视频 | 主资料 | 待验收 | useradd/groupadd、主组与附加组 | 未强调 -G 是覆盖、-aG 才是追加 | 通用 | 2026-10-26 | oe-02-03 |
 | `v-user-usermod` | B 站 | 每天一个 Linux 命令 - usermod | [打开](https://www.bilibili.com/video/BV1o94y1B75P/) | 视频 | 补充 | 待验收 | -G 与 -aG、-d -s -L | 未讲 /etc/group 与 id 输出对照 | 通用 | 2026-10-26 | oe-02-03 |
 | `v-pkg-dnf` | B 站 | linux 懒人运维：rocky linux8.9 介绍-yum 与 dnf 命令 | [打开](https://www.bilibili.com/video/BV1Kw41177e5/) | 视频 | 主资料 | 待验收 | dnf 常用子命令、仓库列表 | 以 Rocky 演示，openEuler 的仓库文件名略有差异 | dnf（RHEL 8/9 通用） | 2026-10-26 | oe-03-01 |
-| `v-svc-systemctl` | B 站 | Linux 学习之路 23_服务管理_systemctl 命令 | [打开](https://www.bilibili.com/video/BV1Aa411B7AZ/) | 视频 | 主资料 | 待验收 | start/stop/restart、enable/disable、status | 未讲 enable --now 与 daemon-reload 的时机 | systemd 239+ | 2026-10-26 | oe-03-02 |
-| `v-svc-journal` | B 站 | Linux 学习之路 42_Linux 系统日志_journalctl 命令 | [打开](https://www.bilibili.com/video/BV12P4y1u76e/) | 视频 | 主资料 | 待验收 | -u 按单元、-b 按启动、-f 跟随 | 未讲持久化 Storage 配置 | systemd-journald | 2026-10-26 | oe-03-02 |
+| `a-svc-cheat` | csdn | Systemd - systemctl - journalctl 速查表：服务管理 + 日志排障 | [打开](https://blog.csdn.net/wqmsl/article/details/157810861) | 图文 | 备用 | 待验收 | systemctl start/stop/restart/reload/enable 与 is-active/is-enabled/is-failed、journalctl -u/-p/-b/-k/--since/--until 过滤、journald 磁盘占用与 vacuum 清理、systemd-analyze 启动性能、自定义 Service 与 Timer | 博客速查表，个别命令缺完整回显；面向通用 Linux，未专门讲 openEuler 差异（systemd 行为基本一致） | systemd（通用） | 2026-10-27 | oe-03-02 |
+| `v-svc-systemctl` | B 站 | Linux 学习之路 23_服务管理_systemctl 命令 | [打开](https://www.bilibili.com/video/BV1Aa411B7AZ/) | 视频 | 主资料 | 已验收 | start/stop/restart/reload、enable/disable、status 与 active/enabled 状态、netstat -lntp 验证监听端口 | 未讲 enable --now 与 daemon-reload 的时机 | systemd 239+ | 2026-10-27 | oe-03-02 |
+| `v-svc-journal` | B 站 | Linux 学习之路 42_Linux 系统日志_journalctl 命令 | [打开](https://www.bilibili.com/video/BV12P4y1u76e/) | 视频 | 主资料 | 已验收 | systemd-journald 与 /run/log 二进制日志、翻页与退出快捷键、-n/-p/-f/-u、-S/--since 与 -U/--until 时间筛选 | 未讲 -b 按启动筛选；未讲持久化 Storage 配置（只讲了 /run/log 内存盘、重启清空） | systemd-journald | 2026-10-27 | oe-03-02 |
 | `v-proc-state` | B 站 | 136-linux 进程创建-状态查询-僵尸-孤儿-D 状态进程详解 | [打开](https://www.bilibili.com/video/BV1GPn6zvE5z/) | 视频 | 主资料 | 待验收 | R/S/D/T/Z、僵尸与孤儿 | 偏长，Z 与 D 的判读在前半段 | 通用内核行为 | 2026-10-26 | oe-04-01 |
 | `v-proc-kill` | B 站 | 89-Linux 进程管理-kill、pkill、killall 杀死进程 | [打开](https://www.bilibili.com/video/BV1bpYp6aETv/) | 视频 | 主资料 | 待验收 | 信号编号、TERM 与 KILL 差别 | 未讲 SIGHUP 与重载配置 | 通用 | 2026-10-26 | oe-04-01 |
 | `v-sto-part` | B 站 | Linux 硬盘分区／格式化／挂载，保姆级教程！ | [打开](https://www.bilibili.com/video/BV1pD4y1u7Kf/) | 视频 | 主资料 | 待验收 | fdisk 分区、mkfs、mount | 未讲 GPT 与 parted 的大盘场景 | 通用 | 2026-10-26 | oe-05-01 |
-| `v-sto-fstab` | B 站 | 87-linux 存储-fstab 挂载持久化及 UUID 挂载 | [打开](https://www.bilibili.com/video/BV1UFp2zEEHK/) | 视频 | 主资料 | 待验收 | fstab 六字段、UUID 写法、mount -a | 未讲 systemd 生成挂载单元的时机 | 通用 | 2026-10-26 | oe-05-02 |
-| `v-sto-lvm` | B 站 | Linux 磁盘管理之 PV,VG,LV 的区别，动手练起来 | [打开](https://www.bilibili.com/video/BV1dY4y1z74o/) | 视频 | 主资料 | 待验收 | 三层关系、pvcreate/vgcreate/lvcreate | 未讲扩容与 -r 连带扩文件系统 | lvm2（通用） | 2026-10-26 | oe-05-02 |
-| `v-net-nmcli` | B 站 | 使用 nmcli 命令配置 Linux 网络参数 | [打开](https://www.bilibili.com/video/BV1rmZ3YXETr/) | 视频 | 主资料 | 待验收 | nmcli connection、nmcli device、静态地址 | 16:49 偏长 | NetworkManager / nmcli | 2026-10-26 | oe-06-01 |
-| `v-net-ss` | B 站 | Linux 命令之 netstat、ss | [打开](https://www.bilibili.com/video/BV1ZroEBxEBv/) | 视频 | 主资料 | 待验收 | -lntp 各开关含义、ss 与 netstat 对照 | 未讲 ss 的过滤表达式 | iproute2 ss | 2026-10-26 | oe-06-01 |
+| `a-sto-hw` | huaweicloud | 创建并挂载文件系统（通过 LVM 管理云硬盘·最佳实践） | [打开](https://support.huaweicloud.com/intl/zh-cn/bestpractice-evs/evs_02_0005.html) | 图文 | 备用 | 待验收 | mkfs.ext4 创建文件系统与 mount 挂载、blkid 查询 UUID、/etc/fstab 六列含义与 UUID 自动挂载、mount -a 验证与 lvremove/vgremove/pvremove 清理残留 | 只覆盖挂载与 fstab 环节，LVM 三层创建（pv/vg/lv）见主资料 v-sto-lvm；面向华为云 ECS，命令与发行版无关 | lvm2（通用） | 2026-10-27 | oe-05-02 |
+| `v-sto-fstab` | B 站 | 87-linux 存储-fstab 挂载持久化及 UUID 挂载 | [打开](https://www.bilibili.com/video/BV1UFp2zEEHK/) | 视频 | 主资料 | 已验收 | df -h 挂载查询与 1000/1024 容量差异、fstab 六列格式与 ext4/iso9660 示例、blkid 查 UUID 与生产环境 UUID 挂载、mount -a 生效 | 未讲 systemd 生成挂载单元的时机；满容量只读只是提醒，未演示恢复手段 | 通用 | 2026-10-27 | oe-05-02 |
+| `v-sto-lvm` | B 站 | Linux 磁盘管理之 PV,VG,LV 的区别，动手练起来 | [打开](https://www.bilibili.com/video/BV1dY4y1z74o/) | 视频 | 主资料 | 已验收 | PV/VG/LV 三层概念、fdisk 分区与 pvcreate、vgextend 扩容卷组与 lvcreate 新建逻辑卷、mkfs 与 mount 挂载 | 未演示 vgcreate 从零建卷组（演示的是 vgextend 扩容）；未讲 lvextend 扩已有 LV 与 -r 连带扩文件系统 | lvm2（通用） | 2026-10-27 | oe-05-02 |
+| `v-net-nmcli` | B 站 | 使用 nmcli 命令配置 Linux 网络参数 | [打开](https://www.bilibili.com/video/BV1rmZ3YXETr/) | 视频 | 主资料 | 已验收 | device 与 connection 概念、connection show/add/delete/modify/up/down、静态地址：ipv4.method manual/address/gateway/dns/autoconnect | 16:49 偏长；面向 CentOS 7 讲义，未提 openEuler（命令与 openEuler 一致） | NetworkManager / nmcli | 2026-10-27 | oe-06-01 |
+| `v-net-ss` | B 站 | Linux 命令之 netstat、ss | [打开](https://www.bilibili.com/video/BV1ZroEBxEBv/) | 视频 | 主资料 | 已验收 | netstat -a 与 listen 状态、-p 显示 PID/程序、ss -ta 与 ESTAB、ss -s 全局统计、ss 与 netstat 性能与选型对照 | 未演示 -lntp 组合写法（只讲 -a/-p/-t/-s 单开关）；未讲 ss 过滤表达式 | iproute2 ss | 2026-10-27 | oe-06-01 |
+| `a-net-oe` | openeuler | 配置网络（openEuler 22.03 LTS SP4 服务器文档） | [打开](https://docs.openeuler.org/zh/docs/22.03_LTS_SP4/server/network/network_config/network_configuration.html) | 图文 | 备用 | 待验收 | nmcli connection add/show/up 与 device status、静态 IP（ip4/gw4、ipv4.method manual）与 DNS 配置、ip addr add/del/show 与 ip route | 官方文档只讲网络配置，不讲 ss/监听端口（由主资料 v-net-ss 覆盖）；IPv6 差异部分对初赛超纲 | NetworkManager / nmcli | 2026-10-27 | oe-06-01 |
 | `a-fw-firewalld` | 阿里云开发者社区 | Linux firewalld 防火墙使用详解 | [打开](https://developer.aliyun.com/article/1707560) | 图文 | 主资料 | 已验收 | runtime 与 permanent 两套配置及 reload 后的覆盖关系、--runtime-to-permanent、zone 概念、默认区域与接口/源地址绑定、--query-port / --query-service / --list-all-zones、富规则 rich rule、端口转发、ipset、lockdown、panic | 不讲 SELinux 与防火墙是两层控制（本站补充里补了）；示例里 echo "net.ipv4.ip_forward=1" >> /proc/sys/net/ipv4/ip_forward 是错的，该用 sysctl -w；只提 CentOS/RHEL/Fedora，没说 openEuler；无视频演示 | firewalld / firewall-cmd | 2026-10-27 | oe-06-02 |
 | `a-fw-tc` | tencent | CentOS 7 上的 FirewallD 简明指南（腾讯云开发者社区） | [打开](https://cloud.tencent.com/developer/article/2273936) | 图文 | 备用 | 待验收 | 九个预定义 zone 的含义、--get-default-zone / --set-default-zone、--permanent 加规则再 --reload 生效、--add-service 与 --add-port 的区别 | 只演示用法，没把 runtime 与 permanent 讲成两套独立视图；文末 --list-all 与查询命令被截断；面向 CentOS 7 | firewalld / zone | 2026-10-27 | oe-06-02 |
 | `v-fw-port` | B 站 | Linux 中如何开放防火墙端口？ | [打开](https://www.bilibili.com/video/BV1JF411E7H8/) | 视频 | 补充 | 待验收 | --add-port 实操 | 是否演示 --permanent + --reload 需人工确认 | firewalld --add-port | 2026-10-26 | oe-06-02 |

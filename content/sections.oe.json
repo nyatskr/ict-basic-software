@@ -279,14 +279,14 @@
     "id": "oe-03-02",
     "topic_id": "oe-03",
     "title": "systemd 与 journalctl",
-    "status": "draft",
+    "status": "ready",
     "minutes": 12,
     "objectives": [
       "分清 active（当前状态）与 enabled（开机策略）",
       "用 `enable --now` 一步完成，用 `daemon-reload` 处理 unit 变更",
       "用 journalctl -u 定位启动失败"
     ],
-    "resources": ["v-svc-systemctl", "v-svc-journal"],
+    "resources": ["v-svc-systemctl", "v-svc-journal", "a-svc-cheat"],
     "notes": [
       {
         "h": "start ≠ enable",
@@ -427,14 +427,14 @@
     "id": "oe-05-02",
     "topic_id": "oe-05",
     "title": "LVM 三层与 fstab 持久挂载",
-    "status": "draft",
+    "status": "ready",
     "minutes": 14,
     "objectives": [
       "按 PV → VG → LV → 文件系统 → 挂载 的顺序操作",
       "用 UUID 写 fstab，用 mount -a 验证而不是重启赌",
       "知道 lvextend -r 的连带扩文件系统语义"
     ],
-    "resources": ["v-sto-lvm", "v-sto-fstab"],
+    "resources": ["v-sto-lvm", "v-sto-fstab", "a-sto-hw"],
     "notes": [
       {
         "h": "写 fstab 的验证顺序",
@@ -452,19 +452,19 @@
     "question_ids": ["OE-20", "OE-22"],
     "lab_ids": ["oe-lab-lvm-01"],
     "search_terms": ["lvm pv vg lv", "fstab UUID 挂载"],
-    "gaps": "扩容与缩容的完整实操由本站实验覆盖，视频只讲到建卷。"
+    "gaps": "扩容已有 LV（lvextend -r 连带扩文件系统）与缩容的完整实操由本站实验覆盖，视频只讲到建卷、扩容卷组与挂载。"
   },
   {
     "id": "oe-06-01",
     "topic_id": "oe-06",
     "title": "nmcli 与监听端口",
-    "status": "draft",
+    "status": "ready",
     "minutes": 12,
     "objectives": [
       "区分 connection 与 device 两类对象",
       "用 ss -lntp 查监听端口与归属进程"
     ],
-    "resources": ["v-net-nmcli", "v-net-ss"],
+    "resources": ["v-net-nmcli", "v-net-ss", "a-net-oe"],
     "notes": [
       {
         "h": "connection 是配置，device 是网卡",

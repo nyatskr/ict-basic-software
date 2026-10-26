@@ -397,19 +397,26 @@
       "covers": ["dnf 常用子命令", "仓库列表"], "gaps": "以 Rocky 演示，openEuler 的仓库文件名略有差异",
       "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
     },
+    "a-svc-cheat": {
+      "kind": "article", "platform": "csdn", "title": "Systemd - systemctl - journalctl 速查表：服务管理 + 日志排障",
+      "author": "龙飞05", "url": "https://blog.csdn.net/wqmsl/article/details/157810861",
+      "role": "backup", "status": "candidate", "version_note": "systemd（通用）",
+      "covers": ["systemctl start/stop/restart/reload/enable 与 is-active/is-enabled/is-failed", "journalctl -u/-p/-b/-k/--since/--until 过滤", "journald 磁盘占用与 vacuum 清理", "systemd-analyze 启动性能、自定义 Service 与 Timer"], "gaps": "博客速查表，个别命令缺完整回显；面向通用 Linux，未专门讲 openEuler 差异（systemd 行为基本一致）",
+      "checked_at": "2026-10-27", "note": "备用：正文已读，覆盖 systemctl 与 journalctl 两条主线"
+    },
     "v-svc-systemctl": {
       "kind": "video", "platform": "bilibili", "title": "Linux 学习之路 23_服务管理_systemctl 命令",
       "author": "大飞 1024", "url": "https://www.bilibili.com/video/BV1Aa411B7AZ/", "duration": "10:41",
-      "role": "main", "status": "candidate", "version_note": "systemd 239+",
-      "covers": ["start/stop/restart", "enable/disable", "status"], "gaps": "未讲 enable --now 与 daemon-reload 的时机",
-      "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
+      "role": "main", "status": "verified", "version_note": "systemd 239+",
+      "covers": ["start/stop/restart/reload", "enable/disable", "status 与 active/enabled 状态", "netstat -lntp 验证监听端口"], "gaps": "未讲 enable --now 与 daemon-reload 的时机",
+      "checked_at": "2026-10-27", "note": "已验收（妙记转写+章节摘要）：status/start/stop/restart/reload/enable/disable 全实讲，nginx 演示改 43 端口并用 netstat -lntp 验证，reload 不闪断"
     },
     "v-svc-journal": {
       "kind": "video", "platform": "bilibili", "title": "Linux 学习之路 42_Linux 系统日志_journalctl 命令",
       "author": "大飞 1024", "url": "https://www.bilibili.com/video/BV12P4y1u76e/", "duration": "11:13",
-      "role": "main", "status": "candidate", "version_note": "systemd-journald",
-      "covers": ["-u 按单元", "-b 按启动", "-f 跟随"], "gaps": "未讲持久化 Storage 配置",
-      "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
+      "role": "main", "status": "verified", "version_note": "systemd-journald",
+      "covers": ["systemd-journald 与 /run/log 二进制日志", "翻页与退出快捷键", "-n/-p/-f/-u", "-S/--since 与 -U/--until 时间筛选"], "gaps": "未讲 -b 按启动筛选；未讲持久化 Storage 配置（只讲了 /run/log 内存盘、重启清空）",
+      "checked_at": "2026-10-27", "note": "已验收（妙记转写+章节摘要）：journalctl 基础浏览、-n/-p/-f/-u/-S/-U 均实讲；-b 未讲，原 covers 注与实际不符已改"
     },
     "v-proc-state": {
       "kind": "video", "platform": "bilibili", "title": "136-linux 进程创建-状态查询-僵尸-孤儿-D 状态进程详解",
@@ -432,33 +439,47 @@
       "covers": ["fdisk 分区", "mkfs", "mount"], "gaps": "未讲 GPT 与 parted 的大盘场景",
       "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
     },
+    "a-sto-hw": {
+      "kind": "article", "platform": "huaweicloud", "title": "创建并挂载文件系统（通过 LVM 管理云硬盘·最佳实践）",
+      "author": "华为云", "url": "https://support.huaweicloud.com/intl/zh-cn/bestpractice-evs/evs_02_0005.html",
+      "role": "backup", "status": "candidate", "version_note": "lvm2（通用）",
+      "covers": ["mkfs.ext4 创建文件系统与 mount 挂载", "blkid 查询 UUID", "/etc/fstab 六列含义与 UUID 自动挂载", "mount -a 验证与 lvremove/vgremove/pvremove 清理残留"], "gaps": "只覆盖挂载与 fstab 环节，LVM 三层创建（pv/vg/lv）见主资料 v-sto-lvm；面向华为云 ECS，命令与发行版无关",
+      "checked_at": "2026-10-27", "note": "备用：正文已读，fstab UUID 挂载讲得比主资料细"
+    },
     "v-sto-fstab": {
       "kind": "video", "platform": "bilibili", "title": "87-linux 存储-fstab 挂载持久化及 UUID 挂载",
       "author": "发哥的云计算课堂", "url": "https://www.bilibili.com/video/BV1UFp2zEEHK/", "duration": "11:10",
-      "role": "main", "status": "candidate", "version_note": "通用",
-      "covers": ["fstab 六字段", "UUID 写法", "mount -a"], "gaps": "未讲 systemd 生成挂载单元的时机",
-      "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
+      "role": "main", "status": "verified", "version_note": "通用",
+      "covers": ["df -h 挂载查询与 1000/1024 容量差异", "fstab 六列格式与 ext4/iso9660 示例", "blkid 查 UUID 与生产环境 UUID 挂载", "mount -a 生效"], "gaps": "未讲 systemd 生成挂载单元的时机；满容量只读只是提醒，未演示恢复手段",
+      "checked_at": "2026-10-27", "note": "已验收（妙记转写+章节摘要）：df -h、fstab 六列、UUID 挂载、mount -a、光驱示例均实讲，含挂载丢失后果的考点说明"
     },
     "v-sto-lvm": {
       "kind": "video", "platform": "bilibili", "title": "Linux 磁盘管理之 PV,VG,LV 的区别，动手练起来",
       "author": "程序员木易杨", "url": "https://www.bilibili.com/video/BV1dY4y1z74o/", "duration": "06:15",
-      "role": "main", "status": "candidate", "version_note": "lvm2（通用）",
-      "covers": ["三层关系", "pvcreate/vgcreate/lvcreate"], "gaps": "未讲扩容与 -r 连带扩文件系统",
-      "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
+      "role": "main", "status": "verified", "version_note": "lvm2（通用）",
+      "covers": ["PV/VG/LV 三层概念", "fdisk 分区与 pvcreate", "vgextend 扩容卷组与 lvcreate 新建逻辑卷", "mkfs 与 mount 挂载"], "gaps": "未演示 vgcreate 从零建卷组（演示的是 vgextend 扩容）；未讲 lvextend 扩已有 LV 与 -r 连带扩文件系统",
+      "checked_at": "2026-10-27", "note": "已验收（妙记转写+章节摘要）：PV/VG/LV 定义、fdisk 分区、pvcreate、vgextend、lvcreate、mkfs、mount 全实操；vgcreate 与 lvextend 未覆盖，原 gaps「未讲扩容」已随实讲内容移除"
     },
     "v-net-nmcli": {
       "kind": "video", "platform": "bilibili", "title": "使用 nmcli 命令配置 Linux 网络参数",
       "author": "legolas 蒲公英", "url": "https://www.bilibili.com/video/BV1rmZ3YXETr/", "duration": "16:49",
-      "role": "main", "status": "candidate", "version_note": "NetworkManager / nmcli",
-      "covers": ["nmcli connection", "nmcli device", "静态地址"], "gaps": "16:49 偏长",
-      "checked_at": "2026-10-26", "note": "超过 15 分钟参考值，作为例外保留"
+      "role": "main", "status": "verified", "version_note": "NetworkManager / nmcli",
+      "covers": ["device 与 connection 概念", "connection show/add/delete/modify/up/down", "静态地址：ipv4.method manual/address/gateway/dns/autoconnect"], "gaps": "16:49 偏长；面向 CentOS 7 讲义，未提 openEuler（命令与 openEuler 一致）",
+      "checked_at": "2026-10-27", "note": "已验收（妙记转写+章节摘要）：device/connection 概念、connection 增删改查与启停、静态地址全流程、general hostname 均实讲，并演示配置文件联动（ifcfg-* 自动生成/修改）"
     },
     "v-net-ss": {
       "kind": "video", "platform": "bilibili", "title": "Linux 命令之 netstat、ss",
       "author": "全栈二把刀", "url": "https://www.bilibili.com/video/BV1ZroEBxEBv/", "duration": "06:39",
-      "role": "main", "status": "candidate", "version_note": "iproute2 ss",
-      "covers": ["-lntp 各开关含义", "ss 与 netstat 对照"], "gaps": "未讲 ss 的过滤表达式",
-      "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
+      "role": "main", "status": "verified", "version_note": "iproute2 ss",
+      "covers": ["netstat -a 与 listen 状态", "-p 显示 PID/程序", "ss -ta 与 ESTAB", "ss -s 全局统计", "ss 与 netstat 性能与选型对照"], "gaps": "未演示 -lntp 组合写法（只讲 -a/-p/-t/-s 单开关）；未讲 ss 过滤表达式",
+      "checked_at": "2026-10-27", "note": "已验收（妙记转写+章节摘要）：netstat -a/-p、ss -ta/-s、listen 与 ESTAB 状态、性能对比均实讲；-lntp 组合未演示，原 covers 注已改"
+    },
+    "a-net-oe": {
+      "kind": "article", "platform": "openeuler", "title": "配置网络（openEuler 22.03 LTS SP4 服务器文档）",
+      "author": "openEuler 社区", "url": "https://docs.openeuler.org/zh/docs/22.03_LTS_SP4/server/network/network_config/network_configuration.html",
+      "role": "backup", "status": "candidate", "version_note": "NetworkManager / nmcli",
+      "covers": ["nmcli connection add/show/up 与 device status", "静态 IP（ip4/gw4、ipv4.method manual）与 DNS 配置", "ip addr add/del/show 与 ip route"], "gaps": "官方文档只讲网络配置，不讲 ss/监听端口（由主资料 v-net-ss 覆盖）；IPv6 差异部分对初赛超纲",
+      "checked_at": "2026-10-27", "note": "备用：正文已读，官方文档与 openEuler 平台直接对应"
     },
     "a-fw-firewalld": {
       "kind": "article", "platform": "aliyun", "title": "Linux firewalld 防火墙使用详解",
