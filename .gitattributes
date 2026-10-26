@@ -1,0 +1,4 @@
+# vendor 目录存放第三方原始文件，按字节原样保存。
+# 关闭行尾转换，否则 Windows 上 core.autocrlf=true 会在 checkout 时把 LF 转成 CRLF，
+# 导致文件 SHA-256 与 docs/cloud-sync.md 里记录的校验值不一致。
+assets/vendor/** -text

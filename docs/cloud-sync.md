@@ -219,11 +219,45 @@ GitHub OAuth App **不用再建**——回调地址是 Supabase 的，和 Linux 
 `index.html` 的脚本顺序已经就位：
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/vendor/supabase-js-2.118.0.js"></script>
 <script src="assets/js/cloud-config.js"></script>
 <script src="assets/js/cloud.js"></script>
 <script src="assets/js/app.js"></script>
 ```
+
+## 三之二、SDK 自托管（vendor）
+
+Supabase SDK **不走 CDN**，文件在仓库里：
+
+| 项 | 值 |
+| --- | --- |
+| 版本 | `@supabase/supabase-js@2.118.0`（UMD 构建 `dist/umd/supabase.js`） |
+| 来源 | npm registry：`https://registry.npmjs.org/@supabase/supabase-js/-/supabase-js-2.118.0.tgz` |
+| 下载日期 | 2026-10-27 |
+| 文件 | `assets/vendor/supabase-js-2.118.0.js`（218 KB，未压缩） |
+| 许可证 | MIT，见 `assets/vendor/supabase-js-LICENSE.txt` |
+| SHA-256 | `ee3be8de192b97cb1d73d1e95d6b82bb1f6b658c0f97c4ef757fc331996ed3d3` |
+
+**为什么自托管**：SDK 是可选功能，但它是阻塞脚本。挂在 CDN 上时，CDN 慢或被墙，
+整个应用（不只是云同步）都会卡在启动阶段——这个站就踩过一次，headless 里 app.js 晚了几十秒才执行。
+自托管后只要站点能打开，SDK 就能加载。
+
+**为什么钉死版本**：`@2` 是浮动标签，会在不改仓库的情况下自动升到新的 2.x。钉死后升级是可审计的动作。
+
+升级步骤：
+
+```powershell
+curl.exe -L -o sb.tgz https://registry.npmjs.org/@supabase/supabase-js/-/supabase-js-<新版本>.tgz
+tar -xzf sb.tgz
+copy package\dist\umd\supabase.js assets\vendor\supabase-js-<新版本>.js
+copy package\LICENSE assets\vendor\supabase-js-LICENSE.txt
+Get-FileHash assets\vendor\supabase-js-<新版本>.js -Algorithm SHA256   # 记下新值，同步改 index.html 与本表
+node tools/test-boot-without-cdn.mjs
+```
+
+`tools/test-boot-without-cdn.mjs` 会屏蔽 `cdn.jsdelivr.net` 后启动站点，
+校验题库、目录、实验、路由、SDK、云状态与控制台错误，并断言页面没有向 CDN 发请求。
+**如果有人把 SDK 改回 CDN 引入，这条测试会直接失败。**
 
 ---
 

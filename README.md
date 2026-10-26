@@ -199,6 +199,9 @@ covers[] gaps version_note checked_at note
   `ict_progress_records`（理论题）、`ict_lab_results`（实验成绩）。
 - 本机按账号 ID 分作用域存（`ict.progress.v1.user.<账号ID>`），换账号不会互相覆盖。
 - 账号标识显示为「@GitHub 用户名 · 邮箱 · ID 前 8 位」，数据页「账号核对」可看云端条数与本机各作用域。
+- Supabase SDK 自托管在 `assets/vendor/supabase-js-2.118.0.js`（钉死版本，MIT），**不走 CDN**——
+  它是阻塞脚本，挂 CDN 时一旦加载慢或被墙，整个应用都起不来。
+  `node tools/test-boot-without-cdn.mjs` 会屏蔽 CDN 后验证站点照常启动。
 - 建表 SQL、Redirect URL 配置、常见报错见 `docs/cloud-sync.md`。
 
 ## 目录结构
@@ -216,6 +219,7 @@ assets/js/cloud-config.js     Supabase 连接配置（可公开的 URL 与 Publi
 assets/js/cloud.js            可选模块：GitHub 登录与跨设备同步
 assets/js/views.js            各页面渲染
 assets/js/app.js              hash 路由、会话、计时、实验交互、导入导出
+assets/vendor/supabase-js-2.118.0.js   自托管 SDK（钉死版本，MIT，不走 CDN）
 content/catalog.json          域 / 专题 / 知识图谱节点 / 资料
 content/sections.oe.json      学习小节（按域拆文件）
 content/sections.og.json
@@ -231,6 +235,7 @@ tools/check-ready.py          按 ready 门槛逐节评估（先报告，不阻�
 tools/check-resources.py      资料链接存活与元数据漂移核对（需 yt-dlp）
 tools/build-docs.py           生成 docs/resources.md 与 docs/labs.md
 tools/test-lab.mjs            实验引擎回归测试（headless Chrome 里跑真命令）
+tools/test-boot-without-cdn.mjs  断 CDN 启动回归（需要 Node + Chrome）
 docs/resources.md             资料台账（生成）
 docs/labs.md                  实验说明（生成）
 ```
