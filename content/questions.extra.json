@@ -1,0 +1,60 @@
+[
+  {
+    "id": "OE-X01",
+    "domain": "oe",
+    "kind": "单选",
+    "cluster": "文件、用户与权限",
+    "stem": "用一条命令把 `/srv/app.conf` 的所有者改为 alice、所属组改为 dev，正确的是：",
+    "options": [
+      { "id": "A", "text": "`chown alice dev /srv/app.conf`" },
+      { "id": "B", "text": "`chown alice:dev /srv/app.conf`" },
+      { "id": "C", "text": "`chgrp alice:dev /srv/app.conf`" },
+      { "id": "D", "text": "`chmod alice:dev /srv/app.conf`" }
+    ],
+    "answer": ["B"],
+    "explain": "`chown 用户:组 文件` 同时改属主与属组。写成 `chown alice dev file` 会把 dev 当成第二个文件；`chgrp` 只改组；`chmod` 改的是权限位。"
+  },
+  {
+    "id": "OE-X02",
+    "domain": "oe",
+    "kind": "单选",
+    "cluster": "文件、用户与权限",
+    "stem": "当前 umask 为 `022`，新建目录的默认权限是：",
+    "options": [
+      { "id": "A", "text": "755" },
+      { "id": "B", "text": "644" },
+      { "id": "C", "text": "700" },
+      { "id": "D", "text": "777" }
+    ],
+    "answer": ["A"],
+    "explain": "目录基准是 777，`777 & ~022 = 755`；文件基准是 666，同样 umask 下得到 644。两者的差别就在基准值。"
+  },
+  {
+    "id": "OE-X03",
+    "domain": "oe",
+    "kind": "判断",
+    "cluster": "文件、用户与权限",
+    "stem": "`chmod 4755 app` 中的 4 表示 SUID，对可执行文件而言，运行时进程的有效 UID 会变成文件所有者的 UID。",
+    "options": [
+      { "id": "A", "text": "正确" },
+      { "id": "B", "text": "错误" }
+    ],
+    "answer": ["A"],
+    "explain": "SUID 位（八进制 4，权限串中属主执行位显示为 s）让进程以文件所有者的有效 UID 运行，`/usr/bin/passwd` 就是典型例子。注意它不改变真实 UID。"
+  },
+  {
+    "id": "OE-X04",
+    "domain": "oe",
+    "kind": "多选",
+    "cluster": "文件、用户与权限",
+    "stem": "关于 ACL 的 mask，说法正确的是：",
+    "options": [
+      { "id": "A", "text": "mask 是除 owner 与 other 之外所有条目的有效权限上限" },
+      { "id": "B", "text": "`getfacl` 输出里带 `#effective:` 的行表示被 mask 削减后的实际权限" },
+      { "id": "C", "text": "修改命名用户条目时，若未显式给 mask，setfacl 可能自动重算 mask" },
+      { "id": "D", "text": "只要给命名用户授了 rwx，mask 一定也是 rwx" }
+    ],
+    "answer": ["A", "B", "C"],
+    "explain": "mask 限制的是命名用户、命名组与 group 条目，不含 owner 与 other；D 错在“一定”——若之前用 `-m m::r` 显式设过 mask，再加用户条目不会把它改回 rwx，此时 effective 仍被压到 r。"
+  }
+]

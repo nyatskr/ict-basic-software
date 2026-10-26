@@ -1,0 +1,374 @@
+[
+  {
+    "id": "og-01-01",
+    "topic_id": "og-01",
+    "title": "gsql 连接、元命令与对象定位",
+    "status": "draft",
+    "minutes": 12,
+    "objectives": [
+      "写出 gsql 的 -d / -p / -U 连接参数，知道 -c 与 -f 的分工",
+      "用 \\l \\c \\dn \\dt \\d \\du 快速定位对象",
+      "说清 schema、数据库、表空间三者的层次"
+    ],
+    "resources": [],
+    "notes": [
+      {
+        "h": "连接是一条链，不是一条命令",
+        "t": "客户端 → 地址/端口 → 服务监听 → `pg_hba.conf` 认证规则 → 用户认证 → 数据库与对象权限。远程连不上时按这个顺序逐层查，不要一上来就改密码。"
+      },
+      {
+        "h": "schema 不是用户，也不是目录",
+        "t": "schema 是数据库内的名称空间，用来组织表与权限；它可以与用户同名，但两者是不同概念。表空间才与物理存储位置有关。"
+      }
+    ],
+    "pitfalls": [
+      "把 `-p` 当密码参数（它是端口，密码是 `-W` 或交互输入）",
+      "以为 `\\dt` 能列出所有 schema 下的表（默认只看 search_path 内的）"
+    ],
+    "question_ids": ["OG-01", "OG-02", "OG-03", "OG-05"],
+    "lab_ids": [],
+    "search_terms": ["openGauss gsql 连接", "gsql 元命令"],
+    "gaps": "openGauss 没有合适的中文短视频，本节以官方文档为主。"
+  },
+  {
+    "id": "og-02-01",
+    "topic_id": "og-02",
+    "title": "查询、聚合与连接",
+    "status": "draft",
+    "minutes": 12,
+    "objectives": [
+      "分清 WHERE 与 HAVING 的执行时机",
+      "按需求选择 INNER / LEFT JOIN",
+      "用窗口函数在不合并明细的前提下做组内排名"
+    ],
+    "resources": [],
+    "notes": [
+      {
+        "h": "COUNT(*) 与 COUNT(列) 的差别",
+        "t": "`COUNT(*)` 统计行数，`COUNT(列)` 忽略该列的 NULL。100 行里 phone 有 20 个 NULL 时，`COUNT(phone)` 返回 80。"
+      },
+      {
+        "h": "窗口函数不是聚合的替代品",
+        "t": "`RANK() OVER (PARTITION BY dept ORDER BY salary DESC)` 保留明细行并追加排名；`GROUP BY` 会把明细行合并。要“既看明细又看排名”就用窗口函数。"
+      }
+    ],
+    "pitfalls": ["把聚合条件写进 WHERE", "用 INNER JOIN 代替 LEFT JOIN 后抱怨“少了行”"],
+    "question_ids": ["OG-07", "OG-08", "OG-09", "OG-10"],
+    "lab_ids": [],
+    "search_terms": ["openGauss SQL 窗口函数", "HAVING 与 WHERE 区别"],
+    "gaps": "暂无配套视频，靠题解与官方 SQL 参考。"
+  },
+  {
+    "id": "og-02-02",
+    "topic_id": "og-02",
+    "title": "约束、序列与最小权限",
+    "status": "draft",
+    "minutes": 14,
+    "objectives": [
+      "说明主键、外键、CHECK 各自维护什么",
+      "知道序列可能不连续",
+      "按 CONNECT / USAGE / SELECT 三层给最小权限"
+    ],
+    "resources": [],
+    "notes": [
+      {
+        "h": "约束与索引不是等价物",
+        "t": "约束表达数据规则，某些约束（主键、唯一）会借助索引实现，但“有索引”不等于“有约束”。题目问“索引能否替代约束”时答案是否定的。"
+      },
+      {
+        "h": "只读账号要三层授权",
+        "t": "`GRANT CONNECT ON DATABASE` + `GRANT USAGE ON SCHEMA` + `GRANT SELECT ON <表>`，三者缺一不可。直接给管理员权限违反最小权限原则。"
+      }
+    ],
+    "pitfalls": ["以为序列一定连续（回滚与缓存都会产生间隙）", "只给表权限，忘了 schema USAGE"],
+    "question_ids": ["OG-04", "OG-06", "OG-11"],
+    "lab_ids": ["og-lab-grant-01"],
+    "search_terms": ["openGauss 最小权限 授权", "openGauss sequence"],
+    "gaps": "配套实验 og-lab-grant-01 覆盖三层授权的完整验证。"
+  },
+  {
+    "id": "og-03-01",
+    "topic_id": "og-03",
+    "title": "事务边界与保存点",
+    "status": "draft",
+    "minutes": 10,
+    "objectives": [
+      "说清 COMMIT 之后保存点就消失了",
+      "用 SAVEPOINT / ROLLBACK TO 做局部回滚"
+    ],
+    "resources": [],
+    "notes": [
+      {
+        "h": "提交已经划定边界",
+        "t": "事务 A 插入并 COMMIT 之后，这个事务就结束了。之后新事务里建立保存点、报错、回滚，都不会影响已经提交的那一行。这类题的关键是先画事务边界。"
+      },
+      {
+        "h": "ROLLBACK TO 不结束事务",
+        "t": "`ROLLBACK TO SAVEPOINT s1` 只撤销 s1 之后的修改，事务仍在进行，最后还要 COMMIT 或 ROLLBACK。"
+      }
+    ],
+    "pitfalls": ["把保存点当成“嵌套事务”", "以为 ROLLBACK TO 之后事务自动结束"],
+    "question_ids": ["OG-12", "OG-16"],
+    "lab_ids": [],
+    "search_terms": ["openGauss savepoint 保存点", "事务边界 commit"],
+    "gaps": "暂无视频，建议直接在实验环境里敲一遍。"
+  },
+  {
+    "id": "og-03-02",
+    "topic_id": "og-03",
+    "title": "隔离级别与 MVCC",
+    "status": "draft",
+    "minutes": 10,
+    "objectives": [
+      "记住 openGauss 默认隔离级别是 READ COMMITTED",
+      "说明 MVCC 解决什么、不解决什么"
+    ],
+    "resources": [],
+    "notes": [
+      {
+        "h": "默认 READ COMMITTED",
+        "t": "每条语句只能看到语句开始前已提交的数据，不会脏读；同一事务内两条相同查询可能看到不同结果（不可重复读）。"
+      },
+      {
+        "h": "MVCC 不是“不需要锁”",
+        "t": "MVCC 让读不阻塞写、写不阻塞读，但写写冲突仍要锁；长事务会阻碍旧版本清理，造成表膨胀。"
+      }
+    ],
+    "pitfalls": ["认为隔离级别越高越好", "把 MVCC 当成完全无锁"],
+    "question_ids": ["OG-13", "OG-14"],
+    "lab_ids": [],
+    "search_terms": ["openGauss 事务隔离级别", "MVCC 多版本"],
+    "gaps": "暂无视频。"
+  },
+  {
+    "id": "og-03-03",
+    "topic_id": "og-03",
+    "title": "行锁与死锁",
+    "status": "draft",
+    "minutes": 10,
+    "objectives": [
+      "用 SELECT ... FOR UPDATE 做读后改的并发控制",
+      "说出三种降低死锁概率的措施"
+    ],
+    "resources": [],
+    "notes": [
+      {
+        "h": "FOR UPDATE 把“读后改”变成临界区",
+        "t": "普通 SELECT 不加行锁，两个事务可能读到同一份旧值再各自覆盖。`SELECT ... FOR UPDATE` 对选中行加锁，让第二个事务等待。"
+      },
+      {
+        "h": "死锁靠“顺序 + 短事务 + 重试”",
+        "t": "统一加锁顺序、缩短持锁时间、对可重试错误做退避重试；无限延长事务只会放大冲突窗口。数据库检测到死锁后会中止其中一个事务。"
+      }
+    ],
+    "pitfalls": ["在事务里做人工确认、调外部接口，长时间持锁"],
+    "question_ids": ["OG-15", "OG-17"],
+    "lab_ids": [],
+    "search_terms": ["openGauss 死锁 排查", "select for update 行锁"],
+    "gaps": "两会话并发实验需要真实环境，暂未做成模拟实验。"
+  },
+  {
+    "id": "og-04-01",
+    "topic_id": "og-04",
+    "title": "索引与组合索引",
+    "status": "draft",
+    "minutes": 10,
+    "objectives": [
+      "说明 B-tree 适合什么查询",
+      "判断组合索引 (a,b) 对哪些条件最有利"
+    ],
+    "resources": [],
+    "notes": [
+      {
+        "h": "“最左前缀”只是必要条件",
+        "t": "组合索引 `(a,b)` 对 `a=1 AND b=2` 最直接有利，但最终是否走索引还取决于选择性、统计信息与成本估算。不要背成“只要前缀对上就一定走”。"
+      },
+      {
+        "h": "函数包裹列会让索引失效",
+        "t": "`WHERE upper(name)='A'` 无法直接用 `name` 上的普通索引；要么改写条件，要么建表达式索引。隐式类型转换同理。"
+      }
+    ],
+    "pitfalls": ["认为索引越多越好（写入与空间成本）", "只看“是否走索引”不看扫描行数"],
+    "question_ids": ["OG-18"],
+    "lab_ids": [],
+    "search_terms": ["openGauss 组合索引 最左前缀"],
+    "gaps": "暂无视频。"
+  },
+  {
+    "id": "og-04-02",
+    "topic_id": "og-04",
+    "title": "执行计划、统计信息与 Hint",
+    "status": "draft",
+    "minutes": 12,
+    "objectives": [
+      "区分 EXPLAIN 与 EXPLAIN ANALYZE",
+      "知道数据大幅变化后先 ANALYZE",
+      "说清 Hint 在调优顺序里的位置"
+    ],
+    "resources": [],
+    "notes": [
+      {
+        "h": "EXPLAIN ANALYZE 会真的执行",
+        "t": "它返回实际行数与耗时，对有副作用的语句必须先包在事务里、看完回滚。只想要估算计划就用 `EXPLAIN`。"
+      },
+      {
+        "h": "调优顺序：结果 → 计划 → 统计 → SQL/索引 → Hint",
+        "t": "先确认结果正确，再看计划与实际数据量，然后更新统计信息，再检查条件与索引，最后才考虑 Hint。Hint 是提示，不是永久补丁。"
+      }
+    ],
+    "pitfalls": ["看到慢 SQL 先加 Hint", "把 EXPLAIN ANALYZE 当纯只读操作"],
+    "question_ids": ["OG-19", "OG-20", "OG-22"],
+    "lab_ids": [],
+    "search_terms": ["openGauss explain analyze", "ANALYZE 统计信息"],
+    "gaps": "暂无视频；真实执行计划解读需要实验环境。"
+  },
+  {
+    "id": "og-04-03",
+    "topic_id": "og-04",
+    "title": "行存与列存",
+    "status": "draft",
+    "minutes": 8,
+    "objectives": ["按读写模式选择行存或列存", "说明为什么列存不适合高频行级更新"],
+    "resources": [],
+    "notes": [
+      {
+        "h": "按访问模式选，不按标签选",
+        "t": "行存适合点查与频繁行级更新；列存按列连续存储，适合大范围扫描与聚合。判断依据是“一次查询碰多少列、多少行”，不是“OLTP 还是 OLAP”这个标签。"
+      }
+    ],
+    "pitfalls": ["认为列存在所有 OLTP 场景都更快"],
+    "question_ids": ["OG-21"],
+    "lab_ids": [],
+    "search_terms": ["openGauss 行存 列存 区别"],
+    "gaps": "暂无视频。"
+  },
+  {
+    "id": "og-05-01",
+    "topic_id": "og-05",
+    "title": "逻辑备份与恢复验收",
+    "status": "draft",
+    "minutes": 12,
+    "objectives": [
+      "按场景选择 gs_dump / gs_dumpall / gs_restore / gsql -f",
+      "说出恢复验收要核对哪些项"
+    ],
+    "resources": [],
+    "notes": [
+      {
+        "h": "导出成功不等于备份可用",
+        "t": "要恢复到独立测试库，核对表数、关键表行数、约束、索引、序列与权限，并跑至少三条关键查询。只看到“导出完成”就结束是常见失分点。"
+      },
+      {
+        "h": "自定义归档与纯 SQL 文本的恢复方式不同",
+        "t": "`gs_dump -Fc` 生成的自定义归档用 `gs_restore` 恢复；纯 SQL 文本用 `gsql -f` 执行。"
+      }
+    ],
+    "pitfalls": ["在原库上“恢复”验证", "只比对行数，不比对权限与序列"],
+    "question_ids": ["OG-23", "OG-24"],
+    "lab_ids": [],
+    "search_terms": ["openGauss gs_dump gs_restore", "openGauss 备份恢复"],
+    "gaps": "暂无视频，恢复验收清单见本站实验交付模板。"
+  },
+  {
+    "id": "og-05-02",
+    "topic_id": "og-05",
+    "title": "集群工具与主备切换",
+    "status": "draft",
+    "minutes": 12,
+    "objectives": [
+      "分清 gs_om / gs_ctl / gs_guc 的职责层级",
+      "区分 switchover 与 failover"
+    ],
+    "resources": [],
+    "notes": [
+      {
+        "h": "集群级 vs 节点级",
+        "t": "`gs_om` 管集群（启停、状态、查询），`gs_ctl` 管单实例/节点（query、promote、build），`gs_guc` 管参数。题目给的操作对象是“集群”还是“某个数据目录”，决定了用哪个工具。"
+      },
+      {
+        "h": "Normal 不等于健康",
+        "t": "集群状态 Normal 只说明进程与角色符合预期，还要看复制延迟、连接数、锁与磁盘。"
+      }
+    ],
+    "pitfalls": ["用 gs_ctl 做集群级操作", "只看集群状态就断定主备同步正常"],
+    "question_ids": ["OG-25", "OG-26"],
+    "lab_ids": [],
+    "search_terms": ["openGauss gs_om 集群状态", "switchover failover 区别"],
+    "gaps": "主备实验需要多节点环境，暂未做成模拟实验。"
+  },
+  {
+    "id": "og-05-03",
+    "topic_id": "og-05",
+    "title": "全密态与密钥链",
+    "status": "draft",
+    "minutes": 10,
+    "objectives": [
+      "画出 CMK → CEK → 数据 的密钥链",
+      "说明为什么加解密在客户端完成",
+      "区分全密态、传输加密与磁盘加密"
+    ],
+    "resources": [],
+    "notes": [
+      {
+        "h": "密钥链只有两层",
+        "t": "CMK（客户端主密钥）保护 CEK（列加密密钥），CEK 加密用户敏感数据。CMK 与 CEK 都不是数据库用户口令。"
+      },
+      {
+        "h": "全密态不等于所有 SQL 都能无损执行",
+        "t": "加密后的列在比较、表达式、索引上的能力受加密方式与版本约束。它解决的是“服务端看不到明文”，不是“性能无损”。"
+      }
+    ],
+    "pitfalls": ["把全密态、TLS 传输加密、磁盘加密混成一件事", "以为 gsql 不加 -C 也能做全密态操作"],
+    "question_ids": ["OG-27"],
+    "lab_ids": [],
+    "search_terms": ["openGauss 全密态 CMK CEK"],
+    "gaps": "暂无视频，密钥链以官方文档为准。"
+  },
+  {
+    "id": "og-05-04",
+    "topic_id": "og-05",
+    "title": "账本防篡改",
+    "status": "draft",
+    "minutes": 8,
+    "objectives": ["说明账本解决完整性还是保密性", "知道一致性检查函数的用途"],
+    "resources": [],
+    "notes": [
+      {
+        "h": "账本让篡改“可发现”，不是“不可能”",
+        "t": "通过历史表、全局区块摘要与哈希链，未授权修改会在一致性检查时暴露。`ledger_hist_check` 校验行历史，`ledger_gchain_check` 校验全局哈希链。"
+      }
+    ],
+    "pitfalls": ["认为账本能提供数据保密性（那是加密的事）"],
+    "question_ids": ["OG-28"],
+    "lab_ids": [],
+    "search_terms": ["openGauss 账本 防篡改 ledger"],
+    "gaps": "暂无视频。"
+  },
+  {
+    "id": "og-05-05",
+    "topic_id": "og-05",
+    "title": "监控与连接排错",
+    "status": "draft",
+    "minutes": 12,
+    "objectives": [
+      "按主机 → 实例 → 会话 → SQL 四层观察",
+      "沿网络、监听、认证、授权四步排查连不上"
+    ],
+    "resources": [],
+    "notes": [
+      {
+        "h": "连不上先分层，不要先改密码",
+        "t": "进程是否在线 → 是否监听目标地址端口（`listen_addresses`/`port`）→ 防火墙与网络可达 → `pg_hba.conf` 是否允许来源、用户、数据库与认证方式 → 用户是否有 CONNECT 权限。"
+      },
+      {
+        "h": "监控看“指标—现象—定位路径”",
+        "t": "主机 CPU/内存/磁盘、实例角色与复制延迟、会话与锁等待、慢 SQL 与计划变化，四层对应不同的处置手段。"
+      }
+    ],
+    "pitfalls": ["只改密码不查 pg_hba", "只看集群 Normal 不看锁与延迟"],
+    "question_ids": ["OG-29", "OG-30"],
+    "lab_ids": [],
+    "search_terms": ["openGauss pg_hba.conf 连接失败", "openGauss 监控"],
+    "gaps": "暂无视频。"
+  }
+]

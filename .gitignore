@@ -1,0 +1,11 @@
+# 临时 QA 产物（截图、脚本、DOM dump）
+.tmp-qa/
+
+# 工具与编辑器
+.workbuddy-ai/
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

@@ -1,0 +1,552 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-10-26",
+  "site": {
+    "title": "基础软件赛道学习平台",
+    "subtitle": "华为 ICT 大赛 · 实践赛",
+    "season": "第十一届（2026—2027）",
+    "tagline": "知识图谱 + 外部讲解资源 + 理论题库 + 模拟实操 + 阶段测验",
+    "scope_note": "本站是个人备赛学习平台，题目为按公开考纲编写的预测练习，不是大赛官方真题，也不代表命题方立场。软件版本、考试范围与评分规则以大赛官网、赛区通知和考前下发文档为准。",
+    "official": [
+      { "label": "华为 ICT 大赛报名入口", "url": "https://e.huawei.com/cn/talent/ict-academy/#/ict-contest?compId=85132018" },
+      { "label": "华为人才在线 · 竞赛学习空间", "url": "https://talent.shixizhi.huawei.com/" }
+    ]
+  },
+  "domains": [
+    {
+      "id": "oe",
+      "short": "OE",
+      "name": "openEuler",
+      "accent": "#0e9f6e",
+      "tagline": "操作系统基础运维与容器",
+      "scope": "发展历程、基础命令、内存管理、进程管理、文件系统（本赛季通知口径）",
+      "version": "24.03-LTS-SP2",
+      "doc": { "label": "openEuler 文档中心", "url": "https://docs.openeuler.org/" }
+    },
+    {
+      "id": "og",
+      "short": "OG",
+      "name": "openGauss",
+      "accent": "#b7791f",
+      "tagline": "数据库使用、事务与安全",
+      "scope": "概述、连接访问、日常使用、集群管理、全密态、账本防篡改、运维监控",
+      "version": "7.0 / 5.0 LTS",
+      "doc": { "label": "openGauss 文档中心", "url": "https://docs.opengauss.org/" }
+    },
+    {
+      "id": "kp",
+      "short": "KP",
+      "name": "鲲鹏应用开发",
+      "accent": "#4f5bd5",
+      "tagline": "AArch64 迁移与性能优化",
+      "scope": "架构、应用开发、迁移、性能优化、解决方案",
+      "version": "Kunpeng DevKit",
+      "doc": { "label": "鲲鹏文档中心", "url": "https://www.hikunpeng.com/zh/document" }
+    }
+  ],
+  "topics": [
+    {
+      "id": "oe-01",
+      "domain": "oe",
+      "title": "命令与文件",
+      "weight": "S",
+      "summary": "路径、通配、重定向、链接、查找与归档：所有后续实验的地基。",
+      "nodes": [
+        { "label": "绝对/相对路径与通配", "level": 1, "section": "oe-01-01" },
+        { "label": "重定向与管道", "level": 2, "section": "oe-01-01" },
+        { "label": "硬链接与软链接", "level": 2, "section": "oe-01-01" },
+        { "label": "find / grep 分工", "level": 2, "section": "oe-01-01" },
+        { "label": "tar 归档与压缩", "level": 2, "section": "oe-01-01" }
+      ]
+    },
+    {
+      "id": "oe-02",
+      "domain": "oe",
+      "title": "用户、组与权限",
+      "weight": "S",
+      "summary": "权限位、umask、特殊位与 ACL：公开题目线索里出现频率最高的一块。",
+      "nodes": [
+        { "label": "rwx 三类主体", "level": 1, "section": "oe-02-01" },
+        { "label": "数字权限换算", "level": 2, "section": "oe-02-01" },
+        { "label": "目录 r/w/x 的差异", "level": 2, "section": "oe-02-01" },
+        { "label": "umask 与默认权限", "level": 2, "section": "oe-02-02" },
+        { "label": "用户与附加组", "level": 2, "section": "oe-02-03" },
+        { "label": "setgid / sticky", "level": 2, "section": "oe-02-04" },
+        { "label": "ACL 与 mask", "level": 2, "section": "oe-02-05" }
+      ]
+    },
+    {
+      "id": "oe-03",
+      "domain": "oe",
+      "title": "软件包与服务",
+      "weight": "S",
+      "summary": "RPM/DNF、systemd、journalctl 与 cron：理论题和实验题都爱组合考。",
+      "nodes": [
+        { "label": "RPM 查询四件套", "level": 1, "section": "oe-03-01" },
+        { "label": "DNF 仓库与依赖", "level": 2, "section": "oe-03-01" },
+        { "label": "active 与 enabled", "level": 2, "section": "oe-03-02" },
+        { "label": "journalctl 过滤", "level": 2, "section": "oe-03-02" },
+        { "label": "cron 五字段", "level": 2, "section": "oe-03-03" }
+      ]
+    },
+    {
+      "id": "oe-04",
+      "domain": "oe",
+      "title": "进程与内存",
+      "weight": "S",
+      "summary": "进程状态、信号语义与内存指标判读，排错时最先用到。",
+      "nodes": [
+        { "label": "进程状态 R/S/D/T/Z", "level": 1, "section": "oe-04-01" },
+        { "label": "TERM 与 KILL", "level": 2, "section": "oe-04-01" },
+        { "label": "free 的 available", "level": 2, "section": "oe-04-02" },
+        { "label": "swap 与 OOM", "level": 2, "section": "oe-04-02" }
+      ]
+    },
+    {
+      "id": "oe-05",
+      "domain": "oe",
+      "title": "存储与 LVM",
+      "weight": "S",
+      "summary": "分区表、文件系统、LVM 三层与 fstab 持久挂载：openEuler 传统大块。",
+      "nodes": [
+        { "label": "MBR 与 GPT", "level": 1, "section": "oe-05-01" },
+        { "label": "XFS 与 ext4", "level": 2, "section": "oe-05-01" },
+        { "label": "PV → VG → LV", "level": 2, "section": "oe-05-02" },
+        { "label": "fstab 六字段与 UUID", "level": 2, "section": "oe-05-02" }
+      ]
+    },
+    {
+      "id": "oe-06",
+      "domain": "oe",
+      "title": "网络与防火墙",
+      "weight": "A",
+      "summary": "nmcli、监听端口与 firewalld 的两套配置视图。",
+      "nodes": [
+        { "label": "nmcli 连接与设备", "level": 1, "section": "oe-06-01" },
+        { "label": "ss -lntp", "level": 2, "section": "oe-06-01" },
+        { "label": "runtime 与 permanent", "level": 2, "section": "oe-06-02" }
+      ]
+    },
+    {
+      "id": "oe-07",
+      "domain": "oe",
+      "title": "Shell 脚本",
+      "weight": "S",
+      "summary": "引号、展开、退出状态与条件判断：易做选择题，也易做批处理实验。",
+      "nodes": [
+        { "label": "单引号与双引号", "level": 1, "section": "oe-07-01" },
+        { "label": "$? 与退出状态", "level": 2, "section": "oe-07-01" }
+      ]
+    },
+    {
+      "id": "oe-08",
+      "domain": "oe",
+      "title": "容器与 Intelligence",
+      "weight": "A",
+      "summary": "iSula 容器生命周期、CNI、卷，以及 openEuler Intelligence 的 RAG 流程。",
+      "nodes": [
+        { "label": "镜像与容器", "level": 1, "section": "oe-08-01" },
+        { "label": "卷与持久化", "level": 2, "section": "oe-08-01" },
+        { "label": "CNI 容器网络", "level": 2, "section": "oe-08-01" },
+        { "label": "RAG 知识库流程", "level": 2, "section": "oe-08-02" }
+      ]
+    },
+    {
+      "id": "og-01",
+      "domain": "og",
+      "title": "连接与对象",
+      "weight": "S",
+      "summary": "gsql 连接链路、元命令、schema 与表空间。",
+      "nodes": [
+        { "label": "gsql 连接参数", "level": 1, "section": "og-01-01" },
+        { "label": "元命令 \\l \\dt \\du", "level": 2, "section": "og-01-01" },
+        { "label": "schema 与用户", "level": 2, "section": "og-01-01" },
+        { "label": "表空间定位", "level": 2, "section": "og-01-01" }
+      ]
+    },
+    {
+      "id": "og-02",
+      "domain": "og",
+      "title": "SQL 与权限",
+      "weight": "S",
+      "summary": "查询、聚合、连接、约束、序列与最小权限授权。",
+      "nodes": [
+        { "label": "WHERE 与 HAVING", "level": 1, "section": "og-02-01" },
+        { "label": "JOIN 语义", "level": 2, "section": "og-02-01" },
+        { "label": "窗口函数", "level": 2, "section": "og-02-01" },
+        { "label": "约束与序列", "level": 2, "section": "og-02-02" },
+        { "label": "GRANT 最小权限", "level": 2, "section": "og-02-02" }
+      ]
+    },
+    {
+      "id": "og-03",
+      "domain": "og",
+      "title": "事务与并发",
+      "weight": "S",
+      "summary": "事务边界、保存点、默认隔离级别、MVCC 与锁。",
+      "nodes": [
+        { "label": "COMMIT 划定边界", "level": 1, "section": "og-03-01" },
+        { "label": "SAVEPOINT 局部回滚", "level": 2, "section": "og-03-01" },
+        { "label": "READ COMMITTED", "level": 2, "section": "og-03-02" },
+        { "label": "MVCC 与膨胀", "level": 2, "section": "og-03-02" },
+        { "label": "行锁与死锁", "level": 2, "section": "og-03-03" }
+      ]
+    },
+    {
+      "id": "og-04",
+      "domain": "og",
+      "title": "索引与执行计划",
+      "weight": "S",
+      "summary": "组合索引、EXPLAIN、统计信息、行存与列存。",
+      "nodes": [
+        { "label": "B-tree 与组合索引", "level": 1, "section": "og-04-01" },
+        { "label": "EXPLAIN ANALYZE", "level": 2, "section": "og-04-02" },
+        { "label": "ANALYZE 与统计信息", "level": 2, "section": "og-04-02" },
+        { "label": "Hint 的边界", "level": 2, "section": "og-04-02" },
+        { "label": "行存与列存", "level": 2, "section": "og-04-03" }
+      ]
+    },
+    {
+      "id": "og-05",
+      "domain": "og",
+      "title": "备份、集群与安全",
+      "weight": "S",
+      "summary": "gs_dump/gs_restore、gs_om/gs_ctl、主备切换、全密态、账本与监控。",
+      "nodes": [
+        { "label": "逻辑备份与恢复", "level": 1, "section": "og-05-01" },
+        { "label": "gs_om / gs_ctl / gs_guc", "level": 2, "section": "og-05-02" },
+        { "label": "switchover / failover", "level": 2, "section": "og-05-02" },
+        { "label": "CMK → CEK", "level": 2, "section": "og-05-03" },
+        { "label": "账本防篡改", "level": 2, "section": "og-05-04" },
+        { "label": "监控与连接排错", "level": 2, "section": "og-05-05" }
+      ]
+    },
+    {
+      "id": "kp-01",
+      "domain": "kp",
+      "title": "架构与兼容性",
+      "weight": "S",
+      "summary": "AArch64、RISC、数据模型、内存序，以及 Java 与本地库。",
+      "nodes": [
+        { "label": "aarch64 与 x86_64", "level": 1, "section": "kp-01-01" },
+        { "label": "RISC 特征", "level": 2, "section": "kp-01-01" },
+        { "label": "char 有符号性", "level": 2, "section": "kp-01-02" },
+        { "label": "内存序与原子操作", "level": 2, "section": "kp-01-02" },
+        { "label": "JNI 与 .so", "level": 2, "section": "kp-01-03" }
+      ]
+    },
+    {
+      "id": "kp-02",
+      "domain": "kp",
+      "title": "编译、依赖与容器",
+      "weight": "S",
+      "summary": "SSE intrinsic、编译宏、包架构、多架构镜像与迁移流程。",
+      "nodes": [
+        { "label": "SSE/AVX → NEON/SVE", "level": 1, "section": "kp-02-01" },
+        { "label": "DevKit 扫描项", "level": 2, "section": "kp-02-01" },
+        { "label": "RPM 架构字段", "level": 2, "section": "kp-02-02" },
+        { "label": "file / readelf / ldd", "level": 2, "section": "kp-02-02" },
+        { "label": "multi-arch 镜像", "level": 2, "section": "kp-02-03" },
+        { "label": "九步迁移流程", "level": 2, "section": "kp-02-04" }
+      ]
+    },
+    {
+      "id": "kp-03",
+      "domain": "kp",
+      "title": "DevKit 与性能",
+      "weight": "S",
+      "summary": "DevKit 能力映射、性能基线、perf 热点、NUMA 绑核与 KAE。",
+      "nodes": [
+        { "label": "旧工具名 → DevKit", "level": 1, "section": "kp-03-01" },
+        { "label": "基线固定项", "level": 2, "section": "kp-03-02" },
+        { "label": "P95/P99 与错误率", "level": 2, "section": "kp-03-02" },
+        { "label": "perf record -g", "level": 2, "section": "kp-03-03" },
+        { "label": "numastat 远端访问", "level": 2, "section": "kp-03-04" },
+        { "label": "taskset 与 numactl", "level": 2, "section": "kp-03-04" },
+        { "label": "KAE 定位", "level": 2, "section": "kp-03-05" }
+      ]
+    }
+  ],
+  "resources": {
+    "v-perm-who": {
+      "kind": "video", "platform": "bilibili", "title": "[5 分钟学 linux] 10-详解文件的所有者、所属组、其他人",
+      "author": "搞定 linux", "url": "https://www.bilibili.com/video/BV1FY4y1B7DR/", "duration": "06:07",
+      "role": "main", "status": "candidate", "version_note": "概念讲解，不绑定发行版",
+      "covers": ["三类主体", "所有者/属组/其他人"], "gaps": "未涉及 ACL 与特殊位",
+      "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
+    },
+    "v-perm-str": {
+      "kind": "video", "platform": "bilibili", "title": "Linux 文件权限与 chmod：754 到底是什么意思？",
+      "author": "Melon-妈妈", "url": "https://www.bilibili.com/video/BV1pbHA6iEY1/", "duration": "04:25",
+      "role": "supplement", "status": "candidate", "version_note": "通用",
+      "covers": ["权限串读法", "数字权限换算"], "gaps": "只讲文件，未讲目录 r/w/x 差异",
+      "checked_at": "2026-10-26", "note": "与主视频互补，适合先看结论再看推导"
+    },
+    "v-perm-chmod": {
+      "kind": "video", "platform": "bilibili", "title": "每天一个 Linux 命令 - chmod",
+      "author": "Ternurafl", "url": "https://www.bilibili.com/video/BV19h4y1k7dg/", "duration": "09:23",
+      "role": "main", "status": "candidate", "version_note": "通用",
+      "covers": ["数字模式", "符号模式", "递归 -R"], "gaps": "未讲 umask 联动",
+      "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
+    },
+    "v-perm-octal": {
+      "kind": "video", "platform": "bilibili", "title": "Linux 系统管理：文件权限与八进制数",
+      "author": "张仲恩", "url": "https://www.bilibili.com/video/BV1az421b7ub/", "duration": "02:11",
+      "role": "supplement", "status": "candidate", "version_note": "通用",
+      "covers": ["8-4-2-1 换算"], "gaps": "太短，不含实操",
+      "checked_at": "2026-10-26", "note": "两分钟讲清换算，适合碎片时间"
+    },
+    "v-perm-chown": {
+      "kind": "video", "platform": "bilibili", "title": "每天一个 Linux 命令 - chown",
+      "author": "Ternurafl", "url": "https://www.bilibili.com/video/BV19j411i7AM/", "duration": "03:04",
+      "role": "main", "status": "candidate", "version_note": "通用",
+      "covers": ["chown 用户", "chown 用户:组", "-R"], "gaps": "未讲 chgrp 与硬链接联动",
+      "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
+    },
+    "v-perm-ten": {
+      "kind": "video", "platform": "bilibili", "title": "Linux 权限，十位 -rwx 详解",
+      "author": "A2J 实战训练营", "url": "https://www.bilibili.com/video/BV1MV4y1T771/", "duration": "17:00",
+      "role": "main", "status": "candidate", "version_note": "通用",
+      "covers": ["十位权限串", "特殊位标记位"], "gaps": "17:00 偏长，只看前 10 分钟即可覆盖权限串读法",
+      "checked_at": "2026-10-26", "note": "超过 15 分钟参考值，作为例外保留"
+    },
+    "a-perm-dir": {
+      "kind": "article", "platform": "aliyun", "title": "一章让你明白什么是权限（文件与目录的 rwx 差异）",
+      "author": "阿里云开发者社区", "url": "https://developer.aliyun.com/article/1267820",
+      "role": "main", "status": "candidate", "version_note": "通用",
+      "covers": ["目录 r/w/x 语义", "删除看父目录", "umask 与特殊位简表"],
+      "gaps": "无视频演示", "checked_at": "2026-10-26", "note": "正文已读，覆盖目录权限与删除判据"
+    },
+    "v-perm-umask": {
+      "kind": "video", "platform": "bilibili", "title": "Linux 中的默认权限 - umask",
+      "author": "刘贝斯", "url": "https://www.bilibili.com/video/BV18Q4y197WP/", "duration": "08:46",
+      "role": "main", "status": "candidate", "version_note": "通用",
+      "covers": ["666/777 基准", "umask 计算", "临时与永久设置"], "gaps": "未讲目录 setgid 对新建文件的组继承",
+      "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
+    },
+    "v-perm-umask2": {
+      "kind": "video", "platform": "bilibili", "title": "Linux 系统管理：umask 权限掩码",
+      "author": "张仲恩", "url": "https://www.bilibili.com/video/BV1D4421D7Zx/", "duration": "02:06",
+      "role": "supplement", "status": "candidate", "version_note": "通用",
+      "covers": ["umask 位运算"], "gaps": "未讲 /etc/profile 与 login.defs",
+      "checked_at": "2026-10-26", "note": "补充用，短小"
+    },
+    "v-perm-acl": {
+      "kind": "video", "platform": "bilibili", "title": "9 Linux 权限管理之普通文件 ACL 权限设置",
+      "author": "哈七搭八的小猴子", "url": "https://www.bilibili.com/video/BV13i421f7GV/", "duration": "12:50",
+      "role": "main", "status": "candidate", "version_note": "通用（需文件系统挂载 acl 选项）",
+      "covers": ["getfacl", "setfacl -m", "-x", "-b", "mask"], "gaps": "默认 ACL 继承只带过",
+      "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
+    },
+    "a-perm-default-acl": {
+      "kind": "article", "platform": "php.cn", "title": "怎么通过 setfacl -d 设置目录的默认 ACL 继承模板",
+      "author": "PHP 中文网", "url": "https://www.php.cn/faq/3240339.html",
+      "role": "main", "status": "candidate", "version_note": "通用",
+      "covers": ["默认 ACL -d", "目录继承规则"], "gaps": "无视频",
+      "checked_at": "2026-10-26", "note": "正文已读，明确区分访问 ACL 与默认 ACL"
+    },
+    "a-perm-setfacl": {
+      "kind": "article", "platform": "web", "title": "setfacl 命令详解（-m / -x / -b / -k / -d / -R）",
+      "author": "舒克贝塔", "url": "https://sukbeta.github.io/setfacl-command/",
+      "role": "supplement", "status": "candidate", "version_note": "通用",
+      "covers": ["-b 与 -k 的区别", "mask 重算"], "gaps": "站点为个人博客，长期可用性需复查",
+      "checked_at": "2026-10-26", "note": "正文已读"
+    },
+    "v-perm-suid": {
+      "kind": "video", "platform": "bilibili", "title": "特殊文件权限之 SUID",
+      "author": "张仲恩", "url": "https://www.bilibili.com/video/BV1rx4y1b7tv/", "duration": "03:26",
+      "role": "main", "status": "candidate", "version_note": "通用",
+      "covers": ["SUID 有效 UID", "大写 S 表示无执行位"], "gaps": "未讲安全风险",
+      "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
+    },
+    "v-perm-sgid": {
+      "kind": "video", "platform": "bilibili", "title": "特殊文件权限之 SGID",
+      "author": "张仲恩", "url": "https://www.bilibili.com/video/BV1aZ421u7XN/", "duration": "01:36",
+      "role": "main", "status": "candidate", "version_note": "通用",
+      "covers": ["目录 SGID 继承属组"], "gaps": "未演示协作目录完整配置",
+      "checked_at": "2026-10-26", "note": "一分半，只讲目录继承这一个点"
+    },
+    "v-perm-sticky": {
+      "kind": "video", "platform": "bilibili", "title": "Linux：演示 SUID SGID SBIT 用法和效果",
+      "author": "_江浸月 ya_", "url": "https://www.bilibili.com/video/BV1xk4y1p7LK/", "duration": "03:31",
+      "role": "supplement", "status": "candidate", "version_note": "通用",
+      "covers": ["sticky bit 防删他人文件"], "gaps": "演示为主，原理讲得少",
+      "checked_at": "2026-10-26", "note": "与 SGID 视频互补"
+    },
+    "v-user-groups": {
+      "kind": "video", "platform": "bilibili", "title": "3-3 Linux 用户及用户组创建和管理",
+      "author": "极速蜗牛-2020", "url": "https://www.bilibili.com/video/BV1tZ4y1e7qa/", "duration": "09:18",
+      "role": "main", "status": "candidate", "version_note": "通用",
+      "covers": ["useradd/groupadd", "主组与附加组"], "gaps": "未强调 -G 是覆盖、-aG 才是追加",
+      "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
+    },
+    "v-user-usermod": {
+      "kind": "video", "platform": "bilibili", "title": "每天一个 Linux 命令 - usermod",
+      "author": "Ternurafl", "url": "https://www.bilibili.com/video/BV1o94y1B75P/", "duration": "05:07",
+      "role": "supplement", "status": "candidate", "version_note": "通用",
+      "covers": ["-G 与 -aG", "-d -s -L"], "gaps": "未讲 /etc/group 与 id 输出对照",
+      "checked_at": "2026-10-26", "note": "本小节最关键的一条补充"
+    },
+    "v-pkg-dnf": {
+      "kind": "video", "platform": "bilibili", "title": "linux 懒人运维：rocky linux8.9 介绍-yum 与 dnf 命令",
+      "author": "Linux 懒人运维", "url": "https://www.bilibili.com/video/BV1Kw41177e5/", "duration": "12:26",
+      "role": "main", "status": "candidate", "version_note": "dnf（RHEL 8/9 通用）",
+      "covers": ["dnf 常用子命令", "仓库列表"], "gaps": "以 Rocky 演示，openEuler 的仓库文件名略有差异",
+      "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
+    },
+    "v-svc-systemctl": {
+      "kind": "video", "platform": "bilibili", "title": "Linux 学习之路 23_服务管理_systemctl 命令",
+      "author": "大飞 1024", "url": "https://www.bilibili.com/video/BV1Aa411B7AZ/", "duration": "10:41",
+      "role": "main", "status": "candidate", "version_note": "systemd 239+",
+      "covers": ["start/stop/restart", "enable/disable", "status"], "gaps": "未讲 enable --now 与 daemon-reload 的时机",
+      "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
+    },
+    "v-svc-journal": {
+      "kind": "video", "platform": "bilibili", "title": "Linux 学习之路 42_Linux 系统日志_journalctl 命令",
+      "author": "大飞 1024", "url": "https://www.bilibili.com/video/BV12P4y1u76e/", "duration": "11:13",
+      "role": "main", "status": "candidate", "version_note": "systemd-journald",
+      "covers": ["-u 按单元", "-b 按启动", "-f 跟随"], "gaps": "未讲持久化 Storage 配置",
+      "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
+    },
+    "v-proc-state": {
+      "kind": "video", "platform": "bilibili", "title": "136-linux 进程创建-状态查询-僵尸-孤儿-D 状态进程详解",
+      "author": "发哥的云计算课堂", "url": "https://www.bilibili.com/video/BV1GPn6zvE5z/", "duration": "15:26",
+      "role": "main", "status": "candidate", "version_note": "通用内核行为",
+      "covers": ["R/S/D/T/Z", "僵尸与孤儿"], "gaps": "偏长，Z 与 D 的判读在前半段",
+      "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
+    },
+    "v-proc-kill": {
+      "kind": "video", "platform": "bilibili", "title": "89-Linux 进程管理-kill、pkill、killall 杀死进程",
+      "author": "旭哥讲运维", "url": "https://www.bilibili.com/video/BV1bpYp6aETv/", "duration": "13:33",
+      "role": "main", "status": "candidate", "version_note": "通用",
+      "covers": ["信号编号", "TERM 与 KILL 差别"], "gaps": "未讲 SIGHUP 与重载配置",
+      "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
+    },
+    "v-sto-part": {
+      "kind": "video", "platform": "bilibili", "title": "Linux 硬盘分区|格式化|挂载，保姆级教程！",
+      "author": "5997CK", "url": "https://www.bilibili.com/video/BV1pD4y1u7Kf/", "duration": "13:53",
+      "role": "main", "status": "candidate", "version_note": "通用",
+      "covers": ["fdisk 分区", "mkfs", "mount"], "gaps": "未讲 GPT 与 parted 的大盘场景",
+      "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
+    },
+    "v-sto-fstab": {
+      "kind": "video", "platform": "bilibili", "title": "87-linux 存储-fstab 挂载持久化及 UUID 挂载",
+      "author": "发哥的云计算课堂", "url": "https://www.bilibili.com/video/BV1UFp2zEEHK/", "duration": "11:10",
+      "role": "main", "status": "candidate", "version_note": "通用",
+      "covers": ["fstab 六字段", "UUID 写法", "mount -a"], "gaps": "未讲 systemd 生成挂载单元的时机",
+      "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
+    },
+    "v-sto-lvm": {
+      "kind": "video", "platform": "bilibili", "title": "Linux 磁盘管理之 PV,VG,LV 的区别，动手练起来",
+      "author": "程序员木易杨", "url": "https://www.bilibili.com/video/BV1dY4y1z74o/", "duration": "06:15",
+      "role": "main", "status": "candidate", "version_note": "lvm2（通用）",
+      "covers": ["三层关系", "pvcreate/vgcreate/lvcreate"], "gaps": "未讲扩容与 -r 连带扩文件系统",
+      "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
+    },
+    "v-net-nmcli": {
+      "kind": "video", "platform": "bilibili", "title": "使用 nmcli 命令配置 Linux 网络参数",
+      "author": "legolas 蒲公英", "url": "https://www.bilibili.com/video/BV1rmZ3YXETr/", "duration": "16:49",
+      "role": "main", "status": "candidate", "version_note": "NetworkManager / nmcli",
+      "covers": ["nmcli connection", "nmcli device", "静态地址"], "gaps": "16:49 偏长",
+      "checked_at": "2026-10-26", "note": "超过 15 分钟参考值，作为例外保留"
+    },
+    "v-net-ss": {
+      "kind": "video", "platform": "bilibili", "title": "Linux 命令之 netstat、ss",
+      "author": "全栈二把刀", "url": "https://www.bilibili.com/video/BV1ZroEBxEBv/", "duration": "06:39",
+      "role": "main", "status": "candidate", "version_note": "iproute2 ss",
+      "covers": ["-lntp 各开关含义", "ss 与 netstat 对照"], "gaps": "未讲 ss 的过滤表达式",
+      "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
+    },
+    "a-fw-firewalld": {
+      "kind": "article", "platform": "aliyun", "title": "Linux firewalld 防火墙使用详解",
+      "author": "阿里云开发者社区", "url": "https://developer.aliyun.com/article/1707560",
+      "role": "main", "status": "candidate", "version_note": "firewalld / firewall-cmd",
+      "covers": ["runtime 与 permanent 两套配置", "--runtime-to-permanent", "--reload", "zone 与接口", "--query-port"],
+      "gaps": "无视频演示", "checked_at": "2026-10-26", "note": "正文已读，是本专题信息密度最高的一篇"
+    },
+    "v-fw-port": {
+      "kind": "video", "platform": "bilibili", "title": "Linux 中如何开放防火墙端口？",
+      "author": "编程分享录", "url": "https://www.bilibili.com/video/BV1JF411E7H8/", "duration": "05:31",
+      "role": "supplement", "status": "candidate", "version_note": "firewalld --add-port",
+      "covers": ["--add-port 实操"], "gaps": "是否演示 --permanent + --reload 需人工确认",
+      "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
+    },
+    "v-file-hardlink": {
+      "kind": "video", "platform": "bilibili", "title": "linux 中的硬链接和软连接",
+      "author": "刘贝斯", "url": "https://www.bilibili.com/video/BV1zK4y1R7jr/", "duration": "13:00",
+      "role": "main", "status": "candidate", "version_note": "通用",
+      "covers": ["inode 与目录项", "硬链接限制", "软链接相对路径"], "gaps": "未讲链接数 ls -l 第二列的读法",
+      "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
+    },
+    "v-file-tar": {
+      "kind": "video", "platform": "bilibili", "title": "10 分钟学会 gzip 和 tar 命令",
+      "author": "colin3dmax", "url": "https://www.bilibili.com/video/BV1dQ4y1R7Lg/", "duration": "12:53",
+      "role": "main", "status": "candidate", "version_note": "通用",
+      "covers": ["tar -czf/-xzf", "-C 指定目录", "-t 只列不解"], "gaps": "未讲 -p 保留权限",
+      "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
+    },
+    "v-file-find": {
+      "kind": "video", "platform": "bilibili", "title": "每天一个 Linux 命令 - find",
+      "author": "Ternurafl", "url": "https://www.bilibili.com/video/BV1nh4y1r7Zq/", "duration": "06:27",
+      "role": "main", "status": "candidate", "version_note": "通用",
+      "covers": ["-name 与引号", "-type 组合"], "gaps": "-mtime 取整、-size 单位需看补充图文",
+      "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
+    },
+    "a-file-find": {
+      "kind": "article", "platform": "web", "title": "Linux find 命令（-mtime 与 -size 用法）",
+      "author": "菜鸟教程", "url": "https://www.runoob.com/linux/linux-comm-find.html",
+      "role": "supplement", "status": "candidate", "version_note": "通用",
+      "covers": ["-size 单位与正负号", "-mtime 取整规则"], "gaps": "中文示例较少",
+      "checked_at": "2026-10-26", "note": "正文已读"
+    },
+    "v-file-redirect": {
+      "kind": "video", "platform": "bilibili", "title": "Shell 其实很简单（11）深入理解 Shell 中的重定向",
+      "author": "张仲恩", "url": "https://www.bilibili.com/video/BV1Hm411m7kP/", "duration": "08:06",
+      "role": "main", "status": "candidate", "version_note": "通用",
+      "covers": ["> 与 >>", "2>", "文件描述符"], "gaps": "2>&1 的顺序问题只带过",
+      "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
+    },
+    "v-file-2to1": {
+      "kind": "video", "platform": "bilibili", "title": "Linux nohup 命令及标准错误重定向语法 2>&1 详解",
+      "author": "学亮编程手记", "url": "https://www.bilibili.com/video/BV1hC32zfEDG/", "duration": "06:23",
+      "role": "supplement", "status": "candidate", "version_note": "通用",
+      "covers": ["2>&1 的指向语义", "与 &> 的区别"], "gaps": "以 nohup 场景切入",
+      "checked_at": "2026-10-26", "note": "专门讲清 2>&1 不会自己产生文件"
+    },
+    "v-shell-quote": {
+      "kind": "video", "platform": "bilibili", "title": "[5 分钟学 linux] 38-自定义变量的 3 种赋值方法及单引号、双引号、无引号的区别",
+      "author": "搞定 linux", "url": "https://www.bilibili.com/video/BV1Ru411C7UN/", "duration": "15:52",
+      "role": "main", "status": "candidate", "version_note": "通用",
+      "covers": ["单引号不展开", "双引号展开", "无引号的分词"], "gaps": "偏长",
+      "checked_at": "2026-10-26", "note": "超过 15 分钟参考值，作为例外保留"
+    },
+    "v-shell-exit": {
+      "kind": "video", "platform": "bilibili", "title": "Shell 其实很简单（15）命令的退出状态码",
+      "author": "张仲恩", "url": "https://www.bilibili.com/video/BV15Z421e79c/", "duration": "02:35",
+      "role": "main", "status": "candidate", "version_note": "通用",
+      "covers": ["$? 语义", "0 与非 0"], "gaps": "未讲 set -e 与管道退出码",
+      "checked_at": "2026-10-26", "note": "两分半，正好覆盖本小节唯一考点"
+    },
+    "v-cron": {
+      "kind": "video", "platform": "bilibili", "title": "Linux 定时任务 crontab 详解",
+      "author": "LeisureLinux", "url": "https://www.bilibili.com/video/BV1Tv411G7dn/", "duration": "16:37",
+      "role": "main", "status": "candidate", "version_note": "通用",
+      "covers": ["五字段", "crontab -e", "系统级任务多一个 user 字段"], "gaps": "偏长；cron 扫描周期未讲",
+      "checked_at": "2026-10-26", "note": "超过 15 分钟参考值，作为例外保留"
+    },
+    "v-cron-5min": {
+      "kind": "video", "platform": "bilibili", "title": "5 分钟的 Linux-crontab 定时任务",
+      "author": "卿瑜的技术日记", "url": "https://www.bilibili.com/video/BV1BLzrYHE6C/", "duration": "12:13",
+      "role": "supplement", "status": "candidate", "version_note": "通用",
+      "covers": ["快速写一条定时任务", "PATH 问题"], "gaps": "字段边界值未覆盖",
+      "checked_at": "2026-10-26", "note": "时间不够时看这条就够"
+    },
+    "v-ctr-podman": {
+      "kind": "video", "platform": "bilibili", "title": "八分钟入门 docker 的继承者 podman",
+      "author": "账号已注销", "url": "https://www.bilibili.com/video/BV1s54y1E7YE/", "duration": "07:32",
+      "role": "main", "status": "candidate", "version_note": "Podman 入门（iSula 命令高度相似）",
+      "covers": ["镜像与容器基本操作"], "gaps": "讲的是 Podman，iSula 的选项差异需自行核对 isula --help；作者已注销，链接失效需替换",
+      "checked_at": "2026-10-26", "note": "作为 iSula 的近似替代，不可当作 iSula 官方资料"
+    }
+  }
+}

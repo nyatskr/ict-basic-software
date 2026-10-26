@@ -1,0 +1,562 @@
+[
+  {
+    "id": "oe-01-01",
+    "topic_id": "oe-01",
+    "title": "链接、查找、归档与重定向",
+    "status": "draft",
+    "minutes": 12,
+    "objectives": [
+      "说清硬链接与软链接在 inode、跨文件系统、失效行为上的差别",
+      "用 find 按类型与大小定位文件，并区分它与 grep 的分工",
+      "用 tar 打包/解包，知道 -t 只列不解",
+      "分清 > >> 2> 与 2>&1 的作用对象"
+    ],
+    "resources": ["v-file-hardlink", "v-file-tar", "v-file-find", "a-file-find", "v-file-redirect", "v-file-2to1"],
+    "notes": [
+      {
+        "h": "版本提示：GNU tar 的 -z 只是调用 gzip",
+        "t": "openEuler 自带 GNU tar，`-czf`/`-xzf` 与老题写法一致。但 `--format`、`--zstd`、`--selinux` 等选项随版本增加，考试环境先 `tar --help` 确认。归档后若 SELinux 上下文丢失，需要 `restorecon` 修回，而不是关 SELinux。"
+      },
+      {
+        "h": "硬链接为什么不能跨文件系统",
+        "t": "硬链接是同一个 inode 的另一个目录项，inode 号由文件系统自己分配，所以不能跨文件系统，通常也不对目录创建。软链接保存的是路径字符串，可以跨文件系统。删除原文件后硬链接仍可访问数据（链接数减 1），软链接则变成悬空链接。"
+      },
+      {
+        "h": "2>&1 不会自己产生文件",
+        "t": "`2>&1` 只表示“让 stderr 指向当前 stdout 所在的位置”，stdout 去哪取决于其他重定向。`cmd 2>&1 > out` 与 `cmd > out 2>&1` 结果不同：前者 stderr 仍指向终端，因为 `2>&1` 在 stdout 改向之前就复制了旧目标。"
+      }
+    ],
+    "pitfalls": [
+      "`find -size +100M` 的 `+` 是“大于”、`-` 是“小于”，漏掉符号含义最容易选错",
+      "把 `grep -R` 当成能按文件大小筛选的工具"
+    ],
+    "question_ids": ["OE-07", "OE-08", "OE-09", "OE-10"],
+    "lab_ids": [],
+    "search_terms": ["linux 硬链接 软链接", "linux tar gzip", "linux find 命令"],
+    "gaps": "find 的 -mtime 取整规则与 -size 单位没有专门短视频，靠补充图文与本站说明。"
+  },
+  {
+    "id": "oe-02-01",
+    "topic_id": "oe-02",
+    "title": "权限位与三类主体",
+    "status": "ready",
+    "minutes": 10,
+    "objectives": [
+      "读出 `-rw-r-----` 每一位属于谁",
+      "在数字与符号两种模式之间换算 chmod",
+      "说明目录的 r/w/x 与文件的 r/w/x 含义不同"
+    ],
+    "resources": ["v-perm-who", "v-perm-str", "v-perm-ten", "a-perm-dir"],
+    "notes": [
+      {
+        "h": "十位串的第一位不是权限",
+        "t": "`ls -l` 第一位是文件类型：`-` 普通文件、`d` 目录、`l` 软链接、`c`/`b` 字符/块设备、`s` 套接字、`p` 命名管道。后面九位才是 rwx 三组。题目问“权限是几位”时，不要把这个类型位算进去。"
+      },
+      {
+        "h": "目录的 x 是“通行证”",
+        "t": "目录的 `r` 决定能否列出条目名，`x` 决定能否进入或穿越并访问已知名字的条目，`w` 决定能否在目录内增删条目。只有 `w` 没有 `x` 时几乎无法正常操作其中文件。删除文件看的是**父目录**的 `wx`，不是文件自身的权限。"
+      },
+      {
+        "h": "大写 S / T 表示“有特殊位但没有执行位”",
+        "t": "`rws` 与 `rwS` 的区别只在 x 位是否置位；`rwxr-xr-t` 与 `rwxr-xr-T` 同理。看到大写字母，说明特殊位设了、但对应执行位没开。"
+      }
+    ],
+    "pitfalls": [
+      "把 `640` 读成“所有者 rwx” —— 6 是 `rw-`，没有 x",
+      "认为 `chmod 777` 是通用修复；考试更看最小权限"
+    ],
+    "question_ids": ["OE-01", "OE-02"],
+    "lab_ids": [],
+    "search_terms": ["linux 文件权限 rwx", "chmod 754"],
+    "gaps": "主视频 17:00 偏长，只看前 10 分钟即可覆盖权限串读法；目录 rwx 的差异由阿里云图文补。"
+  },
+  {
+    "id": "oe-02-02",
+    "topic_id": "oe-02",
+    "title": "umask 与新建对象的默认权限",
+    "status": "ready",
+    "minutes": 8,
+    "objectives": [
+      "用 666 / 777 基准与 umask 位运算算出新建文件与目录的权限",
+      "说明 umask 是掩码而不是权限本身",
+      "会临时改 umask，也知道持久化写在哪里"
+    ],
+    "resources": ["v-perm-umask", "v-perm-umask2"],
+    "notes": [
+      {
+        "h": "umask 是“按位与非”，不是简单减法",
+        "t": "正确写法是 `基准 & ~umask`：`umask 027` 时文件 `666 & ~027 = 640`、目录 `777 & ~027 = 750`。在 027 这类值上减法恰好也对，但在 077 之类的组合上就容易算错。"
+      },
+      {
+        "h": "父目录有 setgid 时，组的来源会变",
+        "t": "父目录设了 setgid 时，新建文件与目录的属组继承父目录属组，而不是创建者的主组。但“默认权限”的组位仍由 umask 决定，这两件事要分开看。"
+      }
+    ],
+    "pitfalls": [
+      "普通文件基准是 666，不会因为基准自动带执行位",
+      "`umask` 不带参数时显示的是四位八进制（第一位是特殊位掩码），不是当前权限"
+    ],
+    "question_ids": ["OE-03", "OE-X02"],
+    "lab_ids": [],
+    "search_terms": ["linux umask 默认权限"],
+    "gaps": "两条视频都没讲 /etc/profile 与 login.defs 的持久化位置，靠本节说明。"
+  },
+  {
+    "id": "oe-02-03",
+    "topic_id": "oe-02",
+    "title": "用户、附加组与 chown",
+    "status": "ready",
+    "minutes": 12,
+    "objectives": [
+      "区分主组与附加组，用 `-aG` 追加而不是覆盖",
+      "用 `id` / `groups` 验证组关系是否生效",
+      "正确写出 `chown 用户:组` 并理解它与 chgrp 的分工"
+    ],
+    "resources": ["v-user-groups", "v-user-usermod", "v-perm-chown"],
+    "notes": [
+      {
+        "h": "`usermod -G` 是覆盖，`-aG` 才是追加",
+        "t": "`usermod -G dev alice` 会把 alice 的附加组列表**替换**成只有 dev；要追加必须写 `-aG`。这是历年题里出现频率最高的坑之一。"
+      },
+      {
+        "h": "改完组要重新登录才生效",
+        "t": "组关系在登录时写进进程凭据，`usermod -aG` 之后当前 shell 的 `id` 不会变，需要重新登录，或用 `newgrp` 临时切换当前主组。"
+      },
+      {
+        "h": "`chown alice:dev` 与 `chown alice.dev`",
+        "t": "冒号是 POSIX 推荐写法，点号是历史兼容写法。用户名里带点时点号写法会有歧义，优先用冒号。只改组用 `chgrp` 或 `chown :dev`，只改主用 `chown alice`。"
+      }
+    ],
+    "pitfalls": [
+      "只改所有者却写成 `chown alice dev` —— dev 会被当成第二个文件",
+      "忘记 `-R`，子目录的所有权没跟着改"
+    ],
+    "question_ids": ["OE-04", "OE-X01", "OE-X03"],
+    "lab_ids": ["oe-lab-perm-01"],
+    "search_terms": ["linux usermod 附加组", "linux chown 用户 组"],
+    "gaps": "没有一条视频同时讲清 -G 覆盖与重新登录生效，必须靠本节说明。"
+  },
+  {
+    "id": "oe-02-04",
+    "topic_id": "oe-02",
+    "title": "协作目录：setgid 与 sticky bit",
+    "status": "ready",
+    "minutes": 12,
+    "objectives": [
+      "用 setgid 让新文件继承目录属组",
+      "用 sticky bit 限制删除他人文件",
+      "算清 2770 / 1777 这类四位权限的含义",
+      "知道组写权限与目录穿越权限缺一不可"
+    ],
+    "resources": ["v-perm-sgid", "v-perm-sticky", "a-perm-dir"],
+    "notes": [
+      {
+        "h": "2770 拆开看",
+        "t": "第一位 `2` 是 setgid，后三位 `770` 是属主/属组/其他。setgid 加在目录上表示“新建对象继承目录属组”，加在可执行文件上表示“以文件属组身份运行”，两者含义完全不同。"
+      },
+      {
+        "h": "sticky 只保护“删除与改名”",
+        "t": "`/tmp` 是 `1777`：所有人可写，但只有文件属主、目录属主或 root 能删除或改名别人的文件。它不阻止别人打开并修改你的文件——那要看文件自身权限。"
+      },
+      {
+        "h": "组写 + 目录 x 缺一不可",
+        "t": "组内有 `w` 但目录没有 `x` 时，成员仍无法进入目录、无法访问其中文件。协作目录通常是 `2770`（属组 rwx），而不是 `2660`。"
+      }
+    ],
+    "pitfalls": [
+      "把 setgid 与 sticky 的作用搞反",
+      "以为 `1777` 能防止别人改你的文件内容"
+    ],
+    "question_ids": ["OE-05"],
+    "lab_ids": ["oe-lab-perm-01"],
+    "search_terms": ["linux setgid 目录", "linux sticky bit 粘滞位"],
+    "gaps": "两条视频都是单点演示，完整的协作目录配置流程由本站实验 oe-lab-perm-01 覆盖。"
+  },
+  {
+    "id": "oe-02-05",
+    "topic_id": "oe-02",
+    "title": "ACL 与 mask",
+    "status": "ready",
+    "minutes": 12,
+    "objectives": [
+      "用 getfacl 读出 ACL 条目与 mask",
+      "用 setfacl -m 给指定用户追加权限",
+      "说清 effective 权限为什么会被 mask 削减",
+      "知道默认 ACL 用 -d，-b 与 -k 的区别"
+    ],
+    "resources": ["v-perm-acl", "a-perm-default-acl", "a-perm-setfacl"],
+    "notes": [
+      {
+        "h": "mask 是“命名条目与属组条目的上限”",
+        "t": "`getfacl` 里的 `mask::` 不限制 owner 和 other，只限制命名用户、命名组和 group 条目。所以给某人 `rwx` 后，若 mask 是 `r--`，他的 effective 权限只有 `r--`。"
+      },
+      {
+        "h": "加了 ACL 之后 ls -l 末尾会出现 +",
+        "t": "带 ACL 的文件在权限串末尾多一个 `+`。此时中间三位的“组”位置显示的其实是 mask，不是原属组权限，直接读 `ls -l` 容易被误导，应改用 `getfacl`。"
+      },
+      {
+        "h": "-b 与 -k 不一样",
+        "t": "`setfacl -b` 清掉全部 ACL（含默认 ACL），`-k` 只清默认 ACL。默认 ACL 只在目录上有意义，用于给新建子对象套模板。"
+      }
+    ],
+    "pitfalls": [
+      "只看命名用户条目就判断权限，忽略 mask",
+      "在未启用 acl 挂载选项的文件系统上做实验，得到“setfacl 不生效”的错误结论"
+    ],
+    "question_ids": ["OE-06", "OE-X04"],
+    "lab_ids": [],
+    "search_terms": ["linux setfacl mask 有效权限", "linux 默认 ACL 继承"],
+    "gaps": "默认 ACL 继承没有合适的中文短视频，主资料用 php.cn 图文。"
+  },
+  {
+    "id": "oe-03-01",
+    "topic_id": "oe-03",
+    "title": "RPM 与 DNF 包管理",
+    "status": "draft",
+    "minutes": 12,
+    "objectives": [
+      "用 rpm -qa / -qf / -ql 做单包查询",
+      "用 dnf 管仓库、依赖与历史",
+      "说清主配置与仓库文件分别在哪"
+    ],
+    "resources": ["v-pkg-dnf"],
+    "notes": [
+      {
+        "h": "rpm 与 dnf 的分工",
+        "t": "rpm 负责单包查询、校验与本地包安装，不解决依赖；dnf 负责仓库、依赖解析和事务。问“文件属于哪个包”用 `rpm -qf`，问“哪个包提供这个文件”用 `dnf provides`。"
+      },
+      {
+        "h": "openEuler 的仓库文件在哪",
+        "t": "仓库定义在 `/etc/yum.repos.d/` 下（openEuler 通常是 `openEuler.repo`，文件名随镜像略有差异），`baseurl` 指向对应版本的 `OS` / `everything` 目录。`/etc/dnf/dnf.conf` 是全局配置，不是仓库文件。"
+      }
+    ],
+    "pitfalls": [
+      "`rpm -ql` 与 `-qf` 方向搞反",
+      "以为 `/etc/fstab` 是包管理配置"
+    ],
+    "question_ids": ["OE-11", "OE-12"],
+    "lab_ids": [],
+    "search_terms": ["rpm -qf 查询包", "dnf 配置仓库"],
+    "gaps": "视频以 Rocky 演示，openEuler 仓库文件名与默认软件源需对照官方文档。"
+  },
+  {
+    "id": "oe-03-02",
+    "topic_id": "oe-03",
+    "title": "systemd 与 journalctl",
+    "status": "draft",
+    "minutes": 12,
+    "objectives": [
+      "分清 active（当前状态）与 enabled（开机策略）",
+      "用 `enable --now` 一步完成，用 `daemon-reload` 处理 unit 变更",
+      "用 journalctl -u 定位启动失败"
+    ],
+    "resources": ["v-svc-systemctl", "v-svc-journal"],
+    "notes": [
+      {
+        "h": "start ≠ enable",
+        "t": "`start` 只改变当前运行状态，重启后不会自动起来；`enable` 只建立开机启动的软链接，不立即启动。两者都要就写 `systemctl enable --now app.service`。"
+      },
+      {
+        "h": "reload 不是万能",
+        "t": "`reload` 只有在 unit 里定义了 `ExecReload=` 才有效，否则直接报错；改了 unit 文件本身要先 `systemctl daemon-reload`，再 restart。"
+      },
+      {
+        "h": "排错顺序",
+        "t": "`systemctl status` → `journalctl -u <unit> -b` → 配置/端口/权限/SELinux。先看状态里的 exit code 和最后几行日志，不要一上来就改配置。"
+      }
+    ],
+    "pitfalls": [
+      "改了 unit 文件忘记 `daemon-reload`，以为 restart 无效",
+      "把 `active` 当成“开机自启”"
+    ],
+    "question_ids": ["OE-13", "OE-14"],
+    "lab_ids": ["oe-lab-svc-01"],
+    "search_terms": ["systemctl enable --now", "journalctl -u 服务"],
+    "gaps": "journald 持久化（Storage=）两条视频都没讲，靠本节说明。"
+  },
+  {
+    "id": "oe-03-03",
+    "topic_id": "oe-03",
+    "title": "cron 计划任务",
+    "status": "draft",
+    "minutes": 10,
+    "objectives": [
+      "写出五字段表达式并读懂 `*/5`、`1-5` 这类写法",
+      "区分用户 crontab 与系统 crontab 的字段数",
+      "知道 cron 的环境变量与交互 shell 不同"
+    ],
+    "resources": ["v-cron", "v-cron-5min"],
+    "notes": [
+      {
+        "h": "系统级任务多一个 user 字段",
+        "t": "`/etc/crontab` 与 `/etc/cron.d/*` 的格式是“分 时 日 月 周 用户 命令”，比 `crontab -e` 多一个用户字段。把用户 crontab 的内容直接贴进 `/etc/crontab`，会被当成命令去执行。"
+      },
+      {
+        "h": "不要背“cron 每 60 秒扫一次”",
+        "t": "扫描间隔是实现细节，随 cronie 版本与配置变化。要掌握的是五字段语义、步进与区间写法，以及脚本里用绝对路径、显式重定向日志。"
+      }
+    ],
+    "pitfalls": [
+      "把顺序写成“时 分 日 月 周”",
+      "在 cron 里依赖 `~/.bashrc` 里设置的 PATH"
+    ],
+    "question_ids": ["OE-15"],
+    "lab_ids": [],
+    "search_terms": ["crontab 五个字段", "linux 定时任务"],
+    "gaps": "主视频 16:37 偏长，时间紧时看补充那条。"
+  },
+  {
+    "id": "oe-04-01",
+    "topic_id": "oe-04",
+    "title": "进程状态与信号",
+    "status": "draft",
+    "minutes": 12,
+    "objectives": [
+      "认出 R / S / D / T / Z 五种状态",
+      "说明 SIGTERM 与 SIGKILL 的差别与使用顺序",
+      "解释僵尸进程的成因与正确处置方式"
+    ],
+    "resources": ["v-proc-state", "v-proc-kill"],
+    "notes": [
+      {
+        "h": "D 状态不能靠 kill 解决",
+        "t": "`D` 是不可中断睡眠，通常在等 I/O。此时信号会挂起，`kill -9` 也要等系统调用返回。看到 D 应该查存储或网络 I/O，而不是反复 kill。"
+      },
+      {
+        "h": "僵尸是“已退出但未被回收”",
+        "t": "子进程退出后父进程没有 `wait()`，就会留下 `Z` 状态。它不占 CPU 和内存，但占 PID 表项。正确做法是修父进程，kill 僵尸本身没有意义——它已经死了。"
+      }
+    ],
+    "pitfalls": [
+      "一上来就 `kill -9`，丢掉了进程清理资源的机会",
+      "把 `T`（停止）与 `Z`（僵尸）搞混"
+    ],
+    "question_ids": ["OE-16", "OE-17"],
+    "lab_ids": [],
+    "search_terms": ["linux 进程状态 D Z", "kill TERM KILL 区别"],
+    "gaps": "两条视频都偏长，Z 与 D 的判读在前半段。"
+  },
+  {
+    "id": "oe-04-02",
+    "topic_id": "oe-04",
+    "title": "内存指标判读",
+    "status": "draft",
+    "minutes": 8,
+    "objectives": [
+      "用 available 而不是 free 判断内存压力",
+      "结合 swap 活动、缺页与 OOM 日志下结论"
+    ],
+    "resources": [],
+    "notes": [
+      {
+        "h": "free 少不等于内存不足",
+        "t": "Linux 会把空闲内存用作 page cache，这部分可回收。判断压力要看 `available`、swap 的换入换出（`vmstat` 的 si/so），以及 `dmesg` 里的 OOM 记录。"
+      }
+    ],
+    "pitfalls": ["只看 `free` 一列就判定内存泄漏"],
+    "question_ids": ["OE-18"],
+    "lab_ids": [],
+    "search_terms": ["linux free available 区别", "vmstat si so"],
+    "gaps": "这一节还没有找到合适的短视频，先用文字说明。"
+  },
+  {
+    "id": "oe-05-01",
+    "topic_id": "oe-05",
+    "title": "分区表与文件系统",
+    "status": "draft",
+    "minutes": 12,
+    "objectives": [
+      "按容量选择 MBR 或 GPT",
+      "知道 XFS 只能扩不能缩，ext4 缩容要离线",
+      "说清缩容的正确顺序"
+    ],
+    "resources": ["v-sto-part"],
+    "notes": [
+      {
+        "h": "2 TiB 这条线",
+        "t": "MBR 用 32 位 LBA，按 512 字节扇区算上限约 2 TiB，超过就必须用 GPT。GPT 还有备份分区表与 CRC 校验，损坏后的恢复手段也不同。"
+      },
+      {
+        "h": "XFS 不支持缩容",
+        "t": "XFS 只能用 `xfs_growfs` 扩容；需要变小只能备份 → 重建 → 恢复。ext4 支持缩容但要先 `umount`，并且先缩文件系统、再缩 LV。"
+      }
+    ],
+    "pitfalls": ["以为“扩容缩容都只改 LV 就行”，忽略文件系统层"],
+    "question_ids": ["OE-19", "OE-21"],
+    "lab_ids": [],
+    "search_terms": ["GPT 2TB 分区", "xfs 扩容 缩容"],
+    "gaps": "GPT 与 parted 的大盘场景没有专门视频。"
+  },
+  {
+    "id": "oe-05-02",
+    "topic_id": "oe-05",
+    "title": "LVM 三层与 fstab 持久挂载",
+    "status": "draft",
+    "minutes": 14,
+    "objectives": [
+      "按 PV → VG → LV → 文件系统 → 挂载 的顺序操作",
+      "用 UUID 写 fstab，用 mount -a 验证而不是重启赌",
+      "知道 lvextend -r 的连带扩文件系统语义"
+    ],
+    "resources": ["v-sto-lvm", "v-sto-fstab"],
+    "notes": [
+      {
+        "h": "写 fstab 的验证顺序",
+        "t": "先 `systemctl daemon-reload`（systemd 据此生成挂载单元），再 `mount -a`，最后用 `findmnt --verify` 或 `df -hT` 确认。直接 reboot 是把可恢复的错误变成开不了机。"
+      },
+      {
+        "h": "用 UUID 而不是 /dev/sdb1",
+        "t": "设备名可能随插拔顺序变化，UUID 稳定。`blkid` 取 UUID，fstab 首字段写 `UUID=xxxx`。LVM 逻辑卷也可以用 `/dev/vg0/data` 这种稳定路径。"
+      }
+    ],
+    "pitfalls": [
+      "fstab 写错导致开机进 emergency mode",
+      "`lvextend -r` 只对支持在线扩容的文件系统有效"
+    ],
+    "question_ids": ["OE-20", "OE-22"],
+    "lab_ids": ["oe-lab-lvm-01"],
+    "search_terms": ["lvm pv vg lv", "fstab UUID 挂载"],
+    "gaps": "扩容与缩容的完整实操由本站实验覆盖，视频只讲到建卷。"
+  },
+  {
+    "id": "oe-06-01",
+    "topic_id": "oe-06",
+    "title": "nmcli 与监听端口",
+    "status": "draft",
+    "minutes": 12,
+    "objectives": [
+      "区分 connection 与 device 两类对象",
+      "用 ss -lntp 查监听端口与归属进程"
+    ],
+    "resources": ["v-net-nmcli", "v-net-ss"],
+    "notes": [
+      {
+        "h": "connection 是配置，device 是网卡",
+        "t": "`nmcli connection show` 列出保存的连接配置，`nmcli device status` 看网卡当前状态与绑定的连接。改地址改的是 connection，`nmcli connection up` 之后才生效。"
+      },
+      {
+        "h": "ip addr add 不是持久的",
+        "t": "`ip addr add` 只改当前内核状态，重启或 `nmcli` 重新激活连接后就没了。要持久必须写进 NetworkManager 的连接配置。"
+      }
+    ],
+    "pitfalls": ["把 `ip addr` 的结果当成持久配置", "以为 ping 通就代表端口在监听"],
+    "question_ids": ["OE-23", "OE-24"],
+    "lab_ids": [],
+    "search_terms": ["nmcli 配置静态地址", "ss -lntp"],
+    "gaps": "主视频 16:49 偏长，只看 connection/device 两节即可。"
+  },
+  {
+    "id": "oe-06-02",
+    "topic_id": "oe-06",
+    "title": "firewalld 的两套配置",
+    "status": "draft",
+    "minutes": 10,
+    "objectives": [
+      "分清 runtime 与 permanent 两套视图",
+      "用 --permanent + --reload 持久放行端口",
+      "用 --query-port 验证，知道防火墙与 SELinux 是两层"
+    ],
+    "resources": ["a-fw-firewalld", "v-fw-port"],
+    "notes": [
+      {
+        "h": "不加 --permanent 的规则重启就没了",
+        "t": "`firewall-cmd --add-port=8080/tcp` 只改运行时；`--permanent` 改的是持久配置但不立即生效，需要 `--reload`（或把当前运行时用 `--runtime-to-permanent` 固化）。两套视图要同时看：`--list-all` 看运行时，`--list-all --permanent` 看持久。"
+      },
+      {
+        "h": "防火墙与 SELinux 是两层控制",
+        "t": "端口放行了但服务仍不可访问，可能是 SELinux 不允许该端口（`semanage port -l`）。关掉 SELinux 不是正确解法，应改端口标签或换端口。"
+      }
+    ],
+    "pitfalls": [
+      "只加 `--permanent` 不 reload 就断言“没生效”",
+      "把关闭 SELinux 当成放行端口的手段"
+    ],
+    "question_ids": ["OE-25"],
+    "lab_ids": ["oe-lab-svc-01"],
+    "search_terms": ["firewall-cmd permanent reload", "firewalld 开放端口"],
+    "gaps": "主资料是阿里云图文（已读正文），视频只演示 --add-port。"
+  },
+  {
+    "id": "oe-07-01",
+    "topic_id": "oe-07",
+    "title": "Shell 引号与退出状态",
+    "status": "draft",
+    "minutes": 10,
+    "objectives": [
+      "说明单引号、双引号与无引号的展开差异",
+      "用 $? 判断上一条命令的结果，并知道它会被覆盖"
+    ],
+    "resources": ["v-shell-quote", "v-shell-exit"],
+    "notes": [
+      {
+        "h": "单引号是字面量，双引号只保留变量与命令替换",
+        "t": "单引号内 `$name`、`` `cmd` `` 都不展开；双引号内展开变量但保留空格边界。`\"$@\"` 逐个保留参数边界，`$@` 不加引号会被分词。"
+      },
+      {
+        "h": "$? 会被下一条命令覆盖",
+        "t": "需要判断时立刻取值：`cmd; rc=$?`。管道默认返回最后一个命令的状态，要“整条管道失败即失败”得开 `set -o pipefail`。"
+      }
+    ],
+    "pitfalls": ["认为双引号也会阻止变量展开", "把 `$?` 当成本条命令自己的状态"],
+    "question_ids": ["OE-26", "OE-27"],
+    "lab_ids": [],
+    "search_terms": ["shell 单引号 双引号 区别", "shell $? 退出状态"],
+    "gaps": "引号那条 15:52 偏长，只看前 8 分钟即可。"
+  },
+  {
+    "id": "oe-08-01",
+    "topic_id": "oe-08",
+    "title": "容器生命周期、卷与 CNI",
+    "status": "draft",
+    "minutes": 12,
+    "objectives": [
+      "分清镜像与容器，知道删容器会删可写层",
+      "用卷或绑定挂载做持久化",
+      "说明 CNI 负责什么"
+    ],
+    "resources": ["v-ctr-podman"],
+    "notes": [
+      {
+        "h": "iSula 命令像 Docker，但不完全一样",
+        "t": "`isula pull/images/run/ps/exec/logs/stop/rm` 与 Docker 高度相似，但部分选项与默认行为不同（默认运行时配置、CNI 网络名）。考试环境先看 `isula --help` 和版本，不要按 Docker 记忆硬套。"
+      },
+      {
+        "h": "删容器不删镜像，删容器会删可写层",
+        "t": "容器可写层随容器删除一起消失，数据库文件、上传目录必须放卷或宿主机绑定挂载。镜像只是只读模板，`isula rmi` 与 `isula rm` 是两件事。"
+      }
+    ],
+    "pitfalls": ["把数据写在容器可写层", "把“容器内监听端口”和“映射到宿主机端口”当同一件事"],
+    "question_ids": ["OE-28", "OE-29"],
+    "lab_ids": [],
+    "search_terms": ["isula 容器", "podman 卷 持久化"],
+    "gaps": "iSula 没有专门中文短视频，主资料是 Podman 入门（近似替代），iSula 选项差异必须自行核对 --help。"
+  },
+  {
+    "id": "oe-08-02",
+    "topic_id": "oe-08",
+    "title": "RAG 知识库流程",
+    "status": "draft",
+    "minutes": 8,
+    "objectives": [
+      "说出 RAG 的六步流程",
+      "区分 RAG 与微调",
+      "知道知识库为空、检索无结果时的排错方向"
+    ],
+    "resources": [],
+    "notes": [
+      {
+        "h": "RAG 不改模型权重",
+        "t": "流程是：文档导入 → 分块 → 向量化（Embedding）→ 向量检索 → 召回上下文 → 大模型生成。它靠外部知识增强生成，与微调（改权重）是两条完全不同的路。"
+      },
+      {
+        "h": "排错先看链路哪一段断了",
+        "t": "知识库为空 → 查导入与分块；检索无结果 → 查 Embedding 服务与向量库；答案不引用私有知识 → 查召回阈值与提示词拼装。"
+      }
+    ],
+    "pitfalls": ["把 RAG 当成“装个 K3s 就能问答”", "把 Embedding 服务与推理模型混为一谈"],
+    "question_ids": ["OE-30"],
+    "lab_ids": [],
+    "search_terms": ["openEuler Intelligence 知识库", "RAG 流程 embedding"],
+    "gaps": "这是本赛季新增模块，没有可用的中文讲解视频，只做概念级准备。"
+  }
+]

@@ -1,0 +1,308 @@
+[
+  {
+    "id": "kp-01-01",
+    "topic_id": "kp-01",
+    "title": "AArch64 与 RISC 基础",
+    "status": "draft",
+    "minutes": 8,
+    "objectives": [
+      "认出 `uname -m` 的 aarch64 / x86_64 与对应平台",
+      "说明 Arm 属于 RISC，以及“RISC 不等于性能弱”",
+      "解释 x86_64 二进制为什么不能直接在鲲鹏上跑"
+    ],
+    "resources": [],
+    "notes": [
+      {
+        "h": "架构名有好几套叫法",
+        "t": "Linux 用户态常见 `aarch64`，内核源码里叫 `arm64`，RPM 的架构字段也是 `aarch64`。看到这三个词指的是同一件事，不要当成三种架构。"
+      },
+      {
+        "h": "ISA 与 ABI 都不同",
+        "t": "机器码、寄存器、调用约定、数据模型都不同，所以原生二进制不能通用。要跑只有两条路：拿到 AArch64 构建，或从源码重新编译。"
+      }
+    ],
+    "pitfalls": ["把“RISC 指令精简”误解为“功能弱、不能跑重负载”", "以为改文件名或加兼容层就能跑 x86 二进制"],
+    "question_ids": ["KP-01", "KP-02", "KP-03"],
+    "lab_ids": [],
+    "search_terms": ["鲲鹏 aarch64 架构", "ARM RISC 特点"],
+    "gaps": "暂无配套视频，本节以官方文档与题解为主。"
+  },
+  {
+    "id": "kp-01-02",
+    "topic_id": "kp-01",
+    "title": "数据模型、字节序与内存序",
+    "status": "draft",
+    "minutes": 12,
+    "objectives": [
+      "说出 `char` 有符号性差异会带来什么后果",
+      "设计跨架构协议时做对三件事",
+      "解释为什么 x86 上能跑的无锁代码在 Arm 上可能出错"
+    ],
+    "resources": [],
+    "notes": [
+      {
+        "h": "char 的默认符号性是真实差异",
+        "t": "Arm 上 `char` 默认无符号，x86 上默认有符号。涉及 0x80 以上的字节比较、`char` 转 `int` 的符号扩展都会翻转。正确做法是显式写 `signed char` / `unsigned char`，或评估 `-fsigned-char`，并补边界值回归。"
+      },
+      {
+        "h": "Arm 的内存模型更弱",
+        "t": "x86 的 TSO 让很多代码“碰巧正确”，Arm 允许更多重排。并发代码必须用语言标准原子操作与正确的内存序，靠 `volatile` 或时序巧合都不可靠。"
+      }
+    ],
+    "pitfalls": ["用随机强制类型转换掩盖编译告警", "假设所有平台 `long` 等宽、结构体布局一致"],
+    "question_ids": ["KP-06", "KP-07", "KP-08", "KP-09"],
+    "lab_ids": [],
+    "search_terms": ["鲲鹏 迁移 char 有符号", "ARM 内存序 弱内存模型"],
+    "gaps": "暂无视频；这四点都是官方迁移检查项里的高频条目。"
+  },
+  {
+    "id": "kp-01-03",
+    "topic_id": "kp-01",
+    "title": "Java、JNI 与本地库",
+    "status": "draft",
+    "minutes": 10,
+    "objectives": [
+      "判断一个纯 Java 应用能否直接迁移",
+      "找出 Java 应用里隐藏的本地依赖",
+      "说明为什么“Java 跨平台”不等于免测"
+    ],
+    "resources": [],
+    "notes": [
+      {
+        "h": "字节码跨架构，JDK 不跨",
+        "t": "JAR 里的字节码与架构无关，但运行它的 JDK 必须是 AArch64 版本。同时要检查 JNI/JNA、本地压缩/加密库、字体、监控 Agent。"
+      },
+      {
+        "h": "不要照搬 x86 的 JVM 参数",
+        "t": "按核心数与内存调出来的 GC 参数在新平台上未必最优。迁移后要重测启动时间、吞吐与尾延迟。"
+      }
+    ],
+    "pitfalls": ["“纯 Java 就不用测”", "只换 JDK 不检查 Agent 里的 .so"],
+    "question_ids": ["KP-04", "KP-05"],
+    "lab_ids": [],
+    "search_terms": ["鲲鹏 Java 迁移 JNI", "JNA 本地库 aarch64"],
+    "gaps": "暂无视频。"
+  },
+  {
+    "id": "kp-02-01",
+    "topic_id": "kp-02",
+    "title": "intrinsic 与源码迁移",
+    "status": "draft",
+    "minutes": 12,
+    "objectives": [
+      "说出 SSE/AVX intrinsic 在 Arm 上的三种替代方案",
+      "列出 DevKit 源码迁移能扫出的风险类型"
+    ],
+    "resources": [],
+    "notes": [
+      {
+        "h": "先找“架构强相关”的代码，再谈编译",
+        "t": "典型风险点：`__x86_64__` 硬编码、SSE/AVX intrinsic、x86 内联汇编、x86 专属预编译 `.so`、`-march=native` 构建后跨 CPU 分发。"
+      },
+      {
+        "h": "替代路径按成本排序",
+        "t": "优先改成架构无关实现（编译器自动向量化），其次按 `aarch64` 分支提供 NEON/SVE 版本，最后才考虑维护两套实现。"
+      }
+    ],
+    "pitfalls": ["只改编译参数，不检查汇编与 intrinsic", "用 `-march=native` 构建要分发的二进制"],
+    "question_ids": ["KP-10", "KP-11"],
+    "lab_ids": ["kp-lab-scan-01"],
+    "search_terms": ["鲲鹏 DevKit 源码迁移", "SSE NEON 移植"],
+    "gaps": "暂无视频；配套实验 kp-lab-scan-01 模拟一次依赖审查。"
+  },
+  {
+    "id": "kp-02-02",
+    "topic_id": "kp-02",
+    "title": "包与二进制架构检查",
+    "status": "draft",
+    "minutes": 10,
+    "objectives": [
+      "用 file / readelf / ldd 判断二进制架构与依赖",
+      "说明 noarch 与 x86_64 包的区别",
+      "知道 -march=native 的分发风险"
+    ],
+    "resources": [],
+    "notes": [
+      {
+        "h": "三个命令看三件事",
+        "t": "`file` 看整体类型与架构；`readelf -h` 看 ELF 头的 Machine 字段；`ldd` 看动态依赖是否齐全。三个一起用才能形成依赖清单。"
+      },
+      {
+        "h": "RPM 的架构字段必须匹配",
+        "t": "`foo-1.0.x86_64.rpm` 不能装到 AArch64；只有 `noarch` 包与架构无关。查询时可以用 `rpm -q --qf '%{NAME} %{ARCH}\\n'` 批量看。"
+      }
+    ],
+    "pitfalls": ["只看包名不看架构字段", "ldd 报 not found 就以为是缺包（也可能是架构不对）"],
+    "question_ids": ["KP-12", "KP-14", "KP-15"],
+    "lab_ids": ["kp-lab-scan-01"],
+    "search_terms": ["readelf 查看架构", "rpm 查询架构字段"],
+    "gaps": "暂无视频。"
+  },
+  {
+    "id": "kp-02-03",
+    "topic_id": "kp-02",
+    "title": "多架构容器镜像",
+    "status": "draft",
+    "minutes": 8,
+    "objectives": ["列出构建 multi-arch 镜像时必须逐项确认的四件事"],
+    "resources": [],
+    "notes": [
+      {
+        "h": "镜像能拉取 ≠ 里面都能跑",
+        "t": "要确认：每个构建阶段的基础镜像都有 AArch64 manifest、复制进镜像的二进制与 Agent 是 AArch64、依赖仓库有对应架构的包、两个架构都实际运行验证过。"
+      }
+    ],
+    "pitfalls": ["只检查 `FROM` 的基础镜像，漏掉多阶段构建的 builder 阶段"],
+    "question_ids": ["KP-13"],
+    "lab_ids": [],
+    "search_terms": ["multi-arch 镜像 buildx", "鲲鹏 容器迁移"],
+    "gaps": "暂无视频。"
+  },
+  {
+    "id": "kp-02-04",
+    "topic_id": "kp-02",
+    "title": "迁移流程与交付物",
+    "status": "draft",
+    "minutes": 8,
+    "objectives": ["背下九步迁移流程的顺序", "说出一份迁移清单要写哪些列"],
+    "resources": [],
+    "notes": [
+      {
+        "h": "顺序不能颠倒",
+        "t": "盘点 → 评估 → 准备环境 → 迁移依赖 → 修改与构建 → 功能测试 → 性能基线 → 调优 → 回归交付。先优化再盘点、先上线再找依赖，都会返工。"
+      },
+      {
+        "h": "清单模板",
+        "t": "组件 / 当前版本 / 当前架构 / 目标来源 / 处理方式 / 风险 / 验证。每个组件一行，风险要能对应到验证手段。"
+      }
+    ],
+    "pitfalls": ["把“编译通过”当成迁移完成", "不留回退方案"],
+    "question_ids": ["KP-16"],
+    "lab_ids": [],
+    "search_terms": ["软件迁移流程 评估 验证"],
+    "gaps": "暂无视频。"
+  },
+  {
+    "id": "kp-03-01",
+    "topic_id": "kp-03",
+    "title": "DevKit 能力映射",
+    "status": "draft",
+    "minutes": 8,
+    "objectives": ["把旧工具名映射到 DevKit 的四类能力", "知道答题重点是能力与场景，不是产品名"],
+    "resources": [],
+    "notes": [
+      {
+        "h": "四类能力",
+        "t": "迁移工具（软件评估、源码迁移、系统迁移）、系统性能分析（亲和性、热点、对比）、Java 性能分析、系统诊断（内存/网络 I/O/存储 I/O）。"
+      },
+      {
+        "h": "旧名要认识，但不要死背",
+        "t": "Porting Advisor、Dependency Advisor、Tuning Kit 等旧名在当前资料里已统一到 DevKit。题目给旧名时，答“对应哪类能力”。"
+      }
+    ],
+    "pitfalls": ["把 DevKit 当成单一命令行工具", "记不清时凭旧产品名猜参数"],
+    "question_ids": ["KP-17"],
+    "lab_ids": [],
+    "search_terms": ["Kunpeng DevKit 工具 能力"],
+    "gaps": "暂无视频。"
+  },
+  {
+    "id": "kp-03-02",
+    "topic_id": "kp-03",
+    "title": "性能基线与验收",
+    "status": "draft",
+    "minutes": 10,
+    "objectives": [
+      "列出可靠性能对比要固定的五项",
+      "说明为什么不能只看平均耗时"
+    ],
+    "resources": [],
+    "notes": [
+      {
+        "h": "固定住变量，结论才可信",
+        "t": "数据集、并发、预热、运行时长、软件配置与指标口径都要固定，并多轮测量取稳定值。"
+      },
+      {
+        "h": "四个指标一起看",
+        "t": "吞吐、平均与 P95/P99 时延、错误率与正确性、CPU/内存/I/O 资源成本。只看单次平均耗时不足以证明优化有效。"
+      }
+    ],
+    "pitfalls": ["优化后不提错误率与尾延迟", "换负载再对比，把差异当成优化效果"],
+    "question_ids": ["KP-18", "KP-24"],
+    "lab_ids": [],
+    "search_terms": ["性能基线 压测 指标", "P95 P99 尾延迟"],
+    "gaps": "暂无视频。"
+  },
+  {
+    "id": "kp-03-03",
+    "topic_id": "kp-03",
+    "title": "热点采集与 perf",
+    "status": "draft",
+    "minutes": 8,
+    "objectives": ["用 perf record -g / perf report 采热点", "说清“先测量再优化”的证据链"],
+    "resources": [],
+    "notes": [
+      {
+        "h": "没有调用栈就没有结论",
+        "t": "`perf record -g` 采样并记录调用栈，`perf report` 看热点函数与调用链。只看到“CPU 100%”不等于知道瓶颈在哪。"
+      }
+    ],
+    "pitfalls": ["CPU 利用率高就断言 CPU 瓶颈（可能是锁或 I/O 等待）"],
+    "question_ids": ["KP-19"],
+    "lab_ids": [],
+    "search_terms": ["perf record report 热点", "性能分析 火焰图"],
+    "gaps": "暂无视频。"
+  },
+  {
+    "id": "kp-03-04",
+    "topic_id": "kp-03",
+    "title": "NUMA 与绑核",
+    "status": "draft",
+    "minutes": 12,
+    "objectives": [
+      "用 numastat 判断远端内存访问",
+      "区分 taskset 与 numactl 的职责",
+      "说出“只绑 CPU 不控内存”的后果"
+    ],
+    "resources": [],
+    "notes": [
+      {
+        "h": "绑核不等于 NUMA 优化",
+        "t": "只绑 CPU 不控制内存分配，仍可能访问远端内存。要配合 `numactl --cpunodebind` 与 `--membind`，并注意首次触碰（first touch）决定了页落在哪个节点。"
+      },
+      {
+        "h": "过度绑核会制造新热点",
+        "t": "把进程挤到少数核上，可能让这些核成为瓶颈。应先观察、再小步试验、每次复测。"
+      }
+    ],
+    "pitfalls": ["不测量就全量绑核", "只看平均值不看 P99"],
+    "question_ids": ["KP-20", "KP-21", "KP-22"],
+    "lab_ids": [],
+    "search_terms": ["NUMA 绑核 numactl", "numastat 远端访问"],
+    "gaps": "暂无视频。"
+  },
+  {
+    "id": "kp-03-05",
+    "topic_id": "kp-03",
+    "title": "KAE 与解决方案选型",
+    "status": "draft",
+    "minutes": 8,
+    "objectives": ["说明 KAE 的典型定位", "按“负载—瓶颈—组件—验证”四步选方案"],
+    "resources": [],
+    "notes": [
+      {
+        "h": "KAE 不是通用加速开关",
+        "t": "它利用鲲鹏硬件加速能力，常见于加解密与压缩场景；是否生效取决于处理器型号、驱动、库版本与应用调用方式。"
+      },
+      {
+        "h": "选型答题模板",
+        "t": "工作负载是什么 → 瓶颈在哪一层 → 组件解决哪一层 → 如何验证兼容性与收益。答这四句比罗列产品名得分高。"
+      }
+    ],
+    "pitfalls": ["把 BoostKit 当成一个具体软件", "不考虑版本与硬件条件就断言加速生效"],
+    "question_ids": ["KP-23"],
+    "lab_ids": [],
+    "search_terms": ["KAE 鲲鹏 加速", "BoostKit 场景"],
+    "gaps": "暂无视频。"
+  }
+]
