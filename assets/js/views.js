@@ -1191,6 +1191,115 @@
 
   /* ---------------- 进度与数据 ---------------- */
 
+  /* ---------------- 云同步卡片 ---------------- */
+
+  function cloudTime(ts) {
+    if (!ts) return '';
+    const d = new Date(ts);
+    const p = (n) => String(n).padStart(2, '0');
+    return p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+
+  function cloudUserName(user) {
+    if (!user) return '';
+    const m = user.user_metadata || {};
+    return m.user_name || m.preferred_username || m.name || '';
+  }
+
+  function cloudUserEmail(user) {
+    return user && user.email ? String(user.email) : '';
+  }
+
+  /* Supabase 用户 ID 前 8 位：邮箱缺失时也能区分两个账号 */
+  function cloudUserShortId(user) {
+    const id = user && user.id ? String(user.id) : '';
+    return id ? id.slice(0, 8) : '';
+  }
+
+  /* 一行账号标识：@用户名 · 邮箱 · ID xxxxxxxx */
+  function cloudUserLine(user) {
+    if (!user) return '';
+    const name = cloudUserName(user);
+    const email = cloudUserEmail(user);
+    const short = cloudUserShortId(user);
+    const parts = [];
+    if (name) parts.push('@' + name);
+    if (email) parts.push(email);
+    else parts.push('未取到邮箱');
+    if (short) parts.push('ID ' + short);
+    return parts.join(' · ');
+  }
+
+  function cloudCard() {
+    const c = LP.cloud;
+    if (!c) return '';
+    const st = c.status();
+    const user = st.user;
+    const active = LP.recordList().filter((r) => r.attempts > 0 || r.favorite || r.needsReview).length;
+    const labCount = Object.keys(LP.state.progress.labs || {}).length;
+
+    let dot = '';
+    let head = '';
+    let note = '';
+    let acts = '';
+
+    if (st.state === 'off') {
+      head = '云同步未启用';
+      note = '进度只保存在本机。配置 Supabase 后，可用 GitHub 账号登录并跨设备同步。';
+      acts = '<button class="btn ghost sm" data-act="cloud-help">查看配置步骤</button>';
+    } else if (!user) {
+      head = '未登录';
+      note = '当前记录仅保存在本机' + (active ? '（' + active + ' 条）' : '') + '。登录后可在其他设备上接着练。';
+      acts = '<button class="btn primary sm" data-act="cloud-login">使用 GitHub 登录并同步</button>';
+    } else {
+      head = '已登录：' + cloudUserLine(user);
+      if (st.state === 'syncing') {
+        dot = 'warn';
+        note = '正在同步…';
+      } else if (st.state === 'offline') {
+        dot = 'warn';
+        note = '离线，恢复网络后自动同步；本机记录已保存。';
+      } else if (st.state === 'error') {
+        dot = 'err';
+        note = '同步失败：' + st.message + '。本机记录已保存。';
+      } else if (st.state === 'synced') {
+        dot = 'on';
+        note = '云同步：已同步 ' + cloudTime(st.lastSyncAt) + ' · 本机 ' + active + ' 条记录 · ' + labCount + ' 个实验';
+      } else {
+        dot = 'on';
+        note = '云同步：已连接 · 本机 ' + active + ' 条记录 · ' + labCount + ' 个实验';
+      }
+      acts =
+        '<button class="btn sm" data-act="cloud-sync">立即同步</button>' +
+        '<button class="btn ghost sm" data-act="cloud-diag">账号核对</button>' +
+        '<button class="btn ghost sm" data-act="cloud-logout">退出登录</button>';
+    }
+
+    const emailHint =
+      user && !cloudUserEmail(user)
+        ? '<p class="muted small">这个账号没有返回邮箱，可能是当初登录时没授权邮箱权限。' +
+          '退出后重新登录一次即可补上；在那之前请以「ID」区分两个账号。</p>'
+        : '';
+
+    const mig = c.migrationInfo();
+    const migBlock = mig
+      ? '<div class="warnline cloud-mig">检测到本机已有 ' + mig.count + ' 条未登录记录（含实验成绩），是否合并到当前 GitHub 账号？' +
+        '<span class="cloud-acts"><button class="btn xs primary" data-act="cloud-migrate">合并到云端</button>' +
+        '<button class="btn xs ghost" data-act="cloud-skip-migrate">不合并</button></span></div>'
+      : '';
+
+    return (
+      '<div class="section-head"><h2>云同步</h2><span class="muted">登录后本机与云端自动合并，断网仍可答题</span></div>' +
+      '<div class="card cloud-card">' +
+        '<div class="cloud-row"><i class="cloud-dot ' + dot + '"></i><b>' + esc(head) + '</b></div>' +
+        '<p class="muted small">' + esc(note) + '</p>' +
+        emailHint +
+        '<div class="cloud-acts">' + acts + '</div>' +
+      '</div>' +
+      migBlock
+    );
+  }
+
   V.data = () => {
     const s = LP.globalStats();
     const b = LP.state.bank;
@@ -1207,7 +1316,7 @@
     const nReady = sections.filter((x) => x.status === 'ready').length;
 
     return (
-      '<div class="page-head"><h1>进度与数据</h1><p class="muted">进度保存在当前浏览器本地。换设备或换域名不会自动同步，请用导出/导入迁移。</p></div>' +
+      '<div class="page-head"><h1>进度与数据</h1><p class="muted">进度默认存在当前浏览器本地。登录 GitHub 账号后可跨设备同步；也可以继续用导出/导入手动迁移。</p></div>' +
       '<div class="stat-row">' +
         '<div class="stat"><span>已做</span><b>' + s.done + '</b></div>' +
         '<div class="stat"><span>正确率</span><b>' + LP.pct(s.rate) + '</b></div>' +
@@ -1219,6 +1328,7 @@
       (storageOK
         ? '<div class="okline">本地存储可用，刷新后进度会自动恢复。</div>'
         : '<div class="warnline">当前浏览器禁止写入本地存储（可能是无痕模式或隐私设置）。进度只在本次会话有效，请及时导出。</div>') +
+      cloudCard() +
       '<div class="section-head"><h2>备份与迁移</h2></div>' +
       '<div class="data-grid">' +
         '<div class="card"><h3>导出进度</h3>' +

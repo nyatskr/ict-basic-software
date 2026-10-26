@@ -188,6 +188,17 @@ covers[] gaps version_note checked_at note
 
 ---
 
+## 云同步（可选）
+
+默认纯本地：进度存在浏览器 `localStorage`。填好 `assets/js/cloud-config.js` 后，
+数据页可用 GitHub 账号登录，跨设备同步作答记录与实验成绩。
+
+- 与 Linux 练习站共用同一个 Supabase 项目与 GitHub OAuth App，数据表分开：
+  `ict_progress_records`（理论题）、`ict_lab_results`（实验成绩）。
+- 本机按账号 ID 分作用域存（`ict.progress.v1.user.<账号ID>`），换账号不会互相覆盖。
+- 账号标识显示为「@GitHub 用户名 · 邮箱 · ID 前 8 位」，数据页「账号核对」可看云端条数与本机各作用域。
+- 建表 SQL、Redirect URL 配置、常见报错见 `docs/cloud-sync.md`。
+
 ## 目录结构
 
 ```
@@ -197,8 +208,10 @@ assets/css/app.css            本平台新增组件（域卡片、知识图谱�
 assets/js/data/bank.js        构建产物：题库
 assets/js/data/catalog.js     构建产物：域 / 专题 / 小节 / 资料
 assets/js/data/labs.js        构建产物：实验
-assets/js/core.js             索引、进度存储（含降级）、判分、统计
+assets/js/core.js             索引、进度存储（含降级与账号作用域）、判分、统计
 assets/js/lab-engine.js       状态机实验引擎（linux / sql / audit 三类）
+assets/js/cloud-config.js     Supabase 连接配置（可公开的 URL 与 Publishable key）
+assets/js/cloud.js            可选模块：GitHub 登录与跨设备同步
 assets/js/views.js            各页面渲染
 assets/js/app.js              hash 路由、会话、计时、实验交互、导入导出
 content/catalog.json          域 / 专题 / 知识图谱节点 / 资料

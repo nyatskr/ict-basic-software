@@ -399,3 +399,42 @@
   .lab-top .right { width: 100%; }
   .lab-top .right .btn { flex: 1; }
 }
+
+/* ============ 云同步 ============ */
+.cloud-card { gap: 6px; }
+.cloud-row { display: flex; align-items: center; gap: 9px; }
+.cloud-row b { font-size: 13.5px; font-weight: 600; }
+.cloud-dot { width: 8px; height: 8px; border-radius: 50%; background: #c3c8d2; flex: none; }
+.cloud-dot.on { background: var(--ok); }
+.cloud-dot.warn { background: #d9a03a; }
+.cloud-dot.err { background: var(--bad); }
+.cloud-acts { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.cloud-acts .btn { margin-top: 0; }
+.cloud-mig { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.cloud-mig .cloud-acts { margin-top: 0; }
+
+.steps { margin: 4px 0 12px; padding-left: 20px; font-size: 12.5px; line-height: 1.95; color: var(--ink-2); }
+.steps code { font-family: var(--mono); font-size: 11.5px; background: var(--surface-2); padding: 1px 5px; border-radius: 5px; }
+
+/* 账号核对面板 */
+.diag-list {
+  list-style: none;
+  margin: 4px 0 12px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  font-size: 12.5px;
+  line-height: 2;
+  color: var(--ink-2);
+}
+.diag-list li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; }
+.diag-list b { color: var(--ink); font-weight: 600; }
+.diag-list code {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  background: var(--surface);
+  padding: 1px 5px;
+  border-radius: 5px;
+  word-break: break-all;
+}

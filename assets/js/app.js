@@ -685,6 +685,37 @@
     document.body.classList.remove('modal-open');
   }
 
+  /* 账号核对面板里的云端条数：单独异步填，免得弹窗卡在网络上 */
+  async function fillCloudCount() {
+    const el = document.getElementById('diag-cloud-count');
+    if (!el) return;
+    if (!LP.cloud || !LP.cloud.isSignedIn()) {
+      el.textContent = '未登录';
+      return;
+    }
+    el.textContent = '查询中…';
+    try {
+      const n = await LP.cloud.countCloud();
+      el.textContent = n.records + ' 条记录 · ' + n.labs + ' 个实验';
+    } catch (e) {
+      el.textContent = '查询失败：' + (e && e.message ? e.message : e);
+    }
+  }
+
+  /* 登录后第一次进来：询问是否把本机未登录记录并进账号 */
+  function maybePromptMigration() {
+    if (!LP.cloud) return;
+    const info = LP.cloud.migrationInfo();
+    if (!info) return;
+    openModal(
+      '<h3>把本机记录合并到账号？</h3>' +
+        '<p class="muted">检测到本机已有 <b>' + info.count + '</b> 条未登录记录（含实验成绩）。合并后与云端记录取并集：同一题保留最近一次作答，错误次数取较大值。</p>' +
+        '<p class="muted small">选择「不合并」时，本机记录仍留在这台设备上，但不会进入云端。</p>' +
+        '<div class="modal-act"><button class="btn ghost" data-act="cloud-skip-migrate">不合并</button>' +
+        '<button class="btn primary" data-act="cloud-migrate">合并到云端</button></div>'
+    );
+  }
+
   /* ---------------- 导入导出 ---------------- */
 
   function exportProgress() {
@@ -974,6 +1005,131 @@
       render();
       LP.toast('已清空本机学习记录');
     },
+
+    /* ---------------- 云同步 ---------------- */
+
+    'cloud-login': async () => {
+      if (!LP.cloud) return;
+      try {
+        await LP.cloud.signIn();
+      } catch (e) { /* 已在模块内提示 */ }
+    },
+    'cloud-sync': async () => {
+      if (!LP.cloud || !LP.cloud.isSignedIn()) return;
+      await LP.cloud.syncNow();
+      const st = LP.cloud.status();
+      if (st.state === 'synced') LP.toast('已同步');
+      else if (st.state === 'offline') LP.toast('当前离线，联网后会自动同步', 'warn');
+      else if (st.state === 'error') LP.toast('同步失败：' + st.message, 'warn');
+      render();
+    },
+    'cloud-logout': async () => {
+      if (!LP.cloud) return;
+      try {
+        await LP.cloud.signOut();
+      } catch (e) { /* 已在模块内提示 */ }
+    },
+    'cloud-migrate': async () => {
+      closeModal();
+      if (!LP.cloud) return;
+      try {
+        const n = await LP.cloud.migrate();
+        render();
+        LP.toast(n ? '已合并 ' + n + ' 条记录到云端' : '本机没有可合并的记录');
+      } catch (e) {
+        LP.toast('合并失败：' + (e && e.message ? e.message : e), 'warn');
+      }
+    },
+    'cloud-skip-migrate': () => {
+      if (LP.cloud) LP.cloud.skipMigration();
+      closeModal();
+      render();
+      LP.toast('本机记录已保留，不会上传');
+    },
+    'cloud-diag': () => {
+      if (!LP.cloud || !LP.cloud.isSignedIn()) return;
+      const user = LP.cloud.user();
+      const m = (user && user.user_metadata) || {};
+      const name = m.user_name || m.preferred_username || m.name || '（GitHub 未提供）';
+      const scopes = LP.localScopeSummary();
+      const list = scopes.length
+        ? scopes
+            .map((s) => {
+              const label =
+                s.scope === 'guest'
+                  ? '未登录（guest）'
+                  : '账号 ID ' + LP.esc(s.scope.slice(0, 8)) + (s.current ? '（当前登录）' : '');
+              return (
+                '<li>' + label + '：<b>' + s.active + '</b> 条有效记录' +
+                '<span class="muted small">（实验 ' + s.labs + ' 个）</span></li>'
+              );
+            })
+            .join('')
+        : '<li class="muted">本机没有缓存任何记录</li>';
+
+      openModal(
+        '<h3>账号与记录核对</h3>' +
+          '<p class="muted small">先确认这一块：现在用的是哪个 GitHub 账号。</p>' +
+          '<ul class="diag-list">' +
+            '<li>GitHub 用户名：<b>@' + LP.esc(name) + '</b></li>' +
+            '<li>邮箱：<b>' + LP.esc(user.email || '未获取到（重新登录一次可补上）') + '</b></li>' +
+            '<li>账号 ID：<code>' + LP.esc(String(user.id)) + '</code></li>' +
+            '<li>云端记录：<span id="diag-cloud-count">查询中…</span></li>' +
+          '</ul>' +
+          '<p class="muted small">本机缓存过的作用域 —— 每登一个账号就多存一份，彼此不会覆盖。</p>' +
+          '<ul class="diag-list">' + list + '</ul>' +
+          '<p class="muted small">要确认某个 ID 对应哪个账号：退出登录，用那个账号登进来，再打开这里看邮箱。' +
+          '本面板只读，不会合并、修改或删除任何记录。</p>' +
+          '<div class="modal-act"><button class="btn ghost" data-act="close-modal">关闭</button>' +
+          '<button class="btn sm" data-act="cloud-diag-refresh">重新查询云端</button></div>',
+        { wide: true }
+      );
+      fillCloudCount();
+    },
+    'cloud-diag-refresh': () => {
+      fillCloudCount();
+    },
+    'cloud-help': () => {
+      openModal(
+        '<h3>如何启用云同步</h3>' +
+          '<p class="muted">云同步使用与 Linux 练习站同一个 Supabase 项目，配置一次即可。</p>' +
+          '<ol class="steps">' +
+          '<li>在 Supabase SQL Editor 执行 <code>docs/cloud-sync.md</code> 里的建表 SQL（两张表）。</li>' +
+          '<li>在 Authentication → URL Configuration 的 Redirect URLs 里加上本站的 <code>?auth=callback</code> 地址。</li>' +
+          '<li>把 Project URL 和 Publishable key 填进 <code>assets/js/cloud-config.js</code>。</li>' +
+          '<li>刷新本页，用 GitHub 账号登录。</li>' +
+          '</ol>' +
+          '<p class="muted small">完整步骤与建表 SQL 见仓库中的 docs/cloud-sync.md。</p>' +
+          '<div class="modal-act"><button class="btn primary" data-act="close-modal">知道了</button></div>',
+        { wide: true }
+      );
+    },
+    'clear-cloud': () => {
+      const user = LP.cloud && LP.cloud.user();
+      openModal(
+        '<h3>清空云端与本机记录？</h3>' +
+          '<p class="muted">将删除该账号在云端的全部记录与实验成绩，并清空本机。其他设备下次同步时也会被清空，不可撤销，建议先导出备份。</p>' +
+          (user
+            ? '<p class="muted small">当前账号：' + LP.esc(user.user_metadata && user.user_metadata.user_name ? '@' + user.user_metadata.user_name : '') +
+              ' · ' + LP.esc(user.email || '未取到邮箱') + ' · ID ' + LP.esc(String(user.id).slice(0, 8)) + '</p>'
+            : '') +
+          '<div class="modal-act"><button class="btn ghost" data-act="close-modal">取消</button>' +
+          '<button class="btn danger" data-act="confirm-clear-cloud">确认清空云端</button></div>'
+      );
+    },
+    'confirm-clear-cloud': async () => {
+      if (!LP.cloud || !LP.cloud.isSignedIn()) return closeModal();
+      try {
+        await LP.cloud.clearCloud();
+        LP.resetProgress();
+        LP.clearSession();
+        closeModal();
+        render();
+        LP.toast('已清空云端与本机记录');
+      } catch (e) {
+        LP.toast('清空云端失败：' + (e && e.message ? e.message : e), 'warn');
+      }
+    },
   };
 
   document.addEventListener('click', (e) => {
@@ -1035,6 +1191,27 @@
     });
   }
 
+  /* ---------------- 云同步接线 ---------------- */
+
+  function wireCloud() {
+    if (!LP.cloud) return;
+
+    LP.cloud.onChange(() => {
+      if (parseHash().parts[0] === 'data') render();
+    });
+
+    window.addEventListener('ict:auth-changed', () => {
+      render();
+      maybePromptMigration();
+    });
+
+    window.addEventListener('ict:data-changed', () => {
+      if ((parseHash().parts[0] || 'home') === 'data') render();
+    });
+
+    LP.cloud.init();
+  }
+
   /* ---------------- 启动 ---------------- */
 
   LP.dev = { render, go, startSession };
@@ -1052,6 +1229,7 @@
     render();
     const ver = document.getElementById('side-ver');
     if (ver) ver.textContent = '题库 ' + window.ICT_BANK.bank_version;
+    wireCloud();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
