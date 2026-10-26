@@ -1107,6 +1107,133 @@
           return [err('firewall-cmd: 本环境支持 --add-port/--remove-port/--query-port/--list-all/--reload/--permanent')];
         }
 
+        case 'nmcli': {
+          const net = st.network;
+          if (!net) return [err('nmcli: 这个实验没有网络状态')];
+          const obj = args[0];
+          const act = args[1] || (obj === 'device' ? 'status' : 'show');
+
+          if (obj === 'device' && (act === 'status' || act === 'show')) {
+            out.push(ok('DEVICE  TYPE      STATE         CONNECTION'));
+            Object.keys(net.devices).forEach((d) => {
+              const dev = net.devices[d];
+              out.push(ok(d.padEnd(7) + ' ' + (dev.type || 'ethernet').padEnd(9) + ' ' + dev.state.padEnd(13) + ' ' + (dev.connection || '--')));
+            });
+            return out;
+          }
+
+          if (obj === 'connection' && act === 'show') {
+            const name = args[2];
+            if (!name) {
+              out.push(ok('NAME    UUID                                  TYPE      DEVICE'));
+              Object.keys(net.connections).forEach((n, i) => {
+                const c = net.connections[n];
+                out.push(ok(n.padEnd(7) + ' ' + ('8f3a-0000-0000-0000-00000000000' + (i + 1)).slice(-36).padEnd(37) + (c.type || 'ethernet').padEnd(9) + (c.active ? n : '--')));
+              });
+              return out;
+            }
+            const c = net.connections[name];
+            if (!c) return [err('Error: 没有找到连接 ' + name + '。')];
+            out.push(ok('connection.id:                          ' + name));
+            out.push(ok('connection.type:                        ' + (c.type || 'ethernet')));
+            out.push(ok('ipv4.method:                            ' + c.ipv4.method));
+            out.push(ok('ipv4.addresses:                         ' + (c.ipv4.addresses.join(',') || '--')));
+            out.push(ok('ipv4.gateway:                           ' + (c.ipv4.gateway || '--')));
+            out.push(ok('GENERAL.STATE:                          ' + (c.active ? '已激活' : '未激活')));
+            return out;
+          }
+
+          if (obj === 'connection' && act === 'modify') {
+            if (!needRoot()) return out;
+            const name = args[2];
+            const c = net.connections[name];
+            if (!c) return [err('Error: 没有找到连接 ' + name + '。')];
+            let changed = 0;
+            for (let i = 3; i < args.length; i++) {
+              const a = args[i];
+              const v = args[i + 1];
+              if (a === 'ipv4.method' && v) { c.ipv4.method = v; changed++; i++; }
+              else if (a === 'ipv4.addresses' && v) { c.ipv4.addresses = v.split(',').map((x) => x.trim()).filter(Boolean); changed++; i++; }
+              else if (a === 'ipv4.gateway' && v) { c.ipv4.gateway = v; changed++; i++; }
+              else return [err('nmcli: 本环境只支持 ipv4.method / ipv4.addresses / ipv4.gateway')];
+            }
+            if (!changed) return [err('nmcli: modify 后面要跟属性名和值')];
+            out.push(dim('（连接 ' + name + ' 的配置已改，但还没生效；nmcli connection up ' + name + ' 才写进内核）'));
+            return out;
+          }
+
+          if (obj === 'connection' && (act === 'up' || act === 'down')) {
+            if (!needRoot()) return out;
+            const name = args[2];
+            const c = net.connections[name];
+            if (!c) return [err('Error: 没有找到连接 ' + name + '。')];
+            const devName = Object.keys(net.devices).find((d) => net.devices[d].connection === name);
+            if (!devName) return [err('Error: 连接 ' + name + ' 没有绑定任何设备。')];
+            if (act === 'up') {
+              c.active = true;
+              net.devices[devName].state = 'connected';
+              // 激活会按连接配置重建内核地址：static 用配置里的地址，
+              // DHCP 则由服务端重新下发（模拟里拿到的还是原地址）
+              if (c.ipv4.method === 'manual') net.kernel[devName] = c.ipv4.addresses.slice();
+              out.push(dim('（连接 ' + name + ' 已激活，' + devName + ' 的内核地址按配置重建）'));
+              return out;
+            }
+            c.active = false;
+            net.devices[devName].state = 'disconnected';
+            net.kernel[devName] = [];
+            out.push(dim('（连接 ' + name + ' 已断开，' + devName + ' 的内核地址被清空）'));
+            return out;
+          }
+
+          return [err('nmcli: 本环境支持 connection show|modify|up|down 与 device status')];
+        }
+
+        case 'ip': {
+          const net = st.network;
+          if (!net) return [err('ip: 这个实验没有网络状态')];
+          const sub = args[0];
+          if (sub !== 'addr' && sub !== 'a' && sub !== 'address') {
+            return [err('ip: 本环境只支持 ip addr [show|add|del]')];
+          }
+          const rest = args.slice(1).filter((a) => a !== 'show');
+          const isAdd = rest.indexOf('add') >= 0;
+          const isDel = rest.indexOf('del') >= 0;
+
+          if (isAdd || isDel) {
+            if (!needRoot()) return out;
+            const i0 = rest.indexOf(isAdd ? 'add' : 'del');
+            const cidr = rest[i0 + 1];
+            const di = rest.indexOf('dev');
+            const devName = di >= 0 ? rest[di + 1] : null;
+            if (!cidr || !devName) return [err('ip: 用法 ip addr add <地址/掩码> dev <网卡>')];
+            if (!net.devices[devName]) return [err('ip: 设备 ' + devName + ' 不存在')];
+            const list = net.kernel[devName] || (net.kernel[devName] = []);
+            if (isAdd) {
+              if (list.indexOf(cidr) < 0) list.push(cidr);
+              out.push(dim('（内核已加 ' + cidr + '，但没写进 NetworkManager 连接，重新激活或重启就没了）'));
+            } else {
+              net.kernel[devName] = list.filter((x) => x !== cidr);
+              out.push(dim('（内核已删除 ' + cidr + '）'));
+            }
+            return out;
+          }
+
+          const di = rest.indexOf('dev');
+          const only = di >= 0 ? rest[di + 1] : null;
+          let idx = 0;
+          Object.keys(net.devices).forEach((d) => {
+            if (only && d !== only) return;
+            const dev = net.devices[d];
+            const addrs = net.kernel[d] || [];
+            idx++;
+            out.push(ok(idx + ': ' + d + ': <' + (dev.state === 'connected' ? 'BROADCAST,MULTICAST,UP,LOWER_UP' : 'BROADCAST,MULTICAST') + '> mtu 1500'));
+            out.push(ok('    link/ether ' + (dev.mac || '00:00:00:00:00:00') + ' brd ff:ff:ff:ff:ff:ff'));
+            addrs.forEach((a) => out.push(ok('    inet ' + a + ' brd 192.168.10.255 scope global ' + d)));
+            if (!addrs.length) out.push(dim('    （没有配置地址）'));
+          });
+          return out;
+        }
+
         case 'ss': {
           const rows = [['State', 'Recv-Q', 'Send-Q', 'Local Address:Port', 'Process']];
           rows.push(['LISTEN', '0', '128', '0.0.0.0:22', 'users:(("sshd",pid=901,fd=3))']);
@@ -1577,6 +1704,9 @@
         return typeof val === 'string' && val.indexOf(v.value) >= 0;
       case 'absent':
         return val === undefined || val === null;
+      case 'lacks':
+        // 数组里不能有某个值（例如内核地址里不能残留旧 IP）
+        return Array.isArray(val) && val.indexOf(v.value) < 0;
       case 'same_inode': {
         // v.path 指向某个文件的 inode，v.value 是另一个路径；两者必须是同一 inode 的普通文件
         const a = v.path[1];
@@ -1721,6 +1851,29 @@
         return { k: p, v: fmtMode(st, f) + ' ' + f.owner + ':' + f.group, sub, cls: f.type === 'link' && !st.files[f.target] ? 'bad' : '' };
       }),
     });
+    if (st.network) {
+      // 网络这块要同时看两套视图：连接里的配置（持久）与内核里的地址（当前生效）
+      const rows = [];
+      Object.keys(st.network.devices).forEach((d) => {
+        const dev = st.network.devices[d];
+        rows.push({
+          k: d,
+          v: dev.state + ' · ' + (dev.connection || '--'),
+          sub: '内核 ' + ((st.network.kernel[d] || []).join(' ') || '无地址'),
+          // unmanaged 是 lo 的正常状态，不该标红
+          cls: dev.state === 'connected' ? 'ok' : dev.state === 'unmanaged' ? '' : 'bad',
+        });
+      });
+      Object.keys(st.network.connections).forEach((n) => {
+        const c = st.network.connections[n];
+        rows.push({
+          k: '连接 ' + n,
+          v: c.ipv4.method + (c.active ? ' · 已激活' : ' · 未激活'),
+          sub: '配置 ' + ((c.ipv4.addresses || []).join(' ') || '自动获取') + (c.ipv4.gateway ? ' · 网关 ' + c.ipv4.gateway : ''),
+        });
+      });
+      groups.push({ title: '网络', rows });
+    }
     if (Object.keys(st.services).length) {
       groups.push({
         title: '服务',

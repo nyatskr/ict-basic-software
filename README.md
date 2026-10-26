@@ -88,10 +88,10 @@ node tools/test-lab.mjs files    # 只跑文件 / 链接 / 归档用例
 
 | 域 | 专题 | 小节 | 题 | 实验 |
 | --- | --- | --- | --- | --- |
-| openEuler（OE） | 8 | 19 | 40 | 4 |
+| openEuler（OE） | 8 | 19 | 40 | 5 |
 | openGauss（OG） | 5 | 14 | 34 | 1 |
 | 鲲鹏应用开发（KP） | 3 | 12 | 29 | 1 |
-| 合计 | 16 | 45 | 103 | 6 |
+| 合计 | 16 | 45 | 103 | 7 |
 
 题号体系稳定：`OE-01`～`OE-30`、`OG-01`～`OG-30`、`KP-01`～`KP-24` 来自题库 Markdown 的第 9 章；
 本站补充题用 `OE-X01` 这类带 `X` 的号段，与预测题分开。小节 id 形如 `oe-02-01`，实验 id 形如 `oe-lab-perm-01`。
@@ -112,6 +112,7 @@ node tools/test-lab.mjs files    # 只跑文件 / 链接 / 归档用例
 | --- | --- |
 | `oe-lab-perm-01` | 用户 / 组 / 文件 owner:group:mode / ACL 与 mask / setgid、sticky |
 | `oe-lab-files-01` | inode 与硬链接、软链接 target 与悬空、find 的 -type/-name/-size、tar 归档条目与 -C 解包 |
+| `oe-lab-net-01` | connection 配置 vs device 状态、内核地址、nmcli modify/up/down、ss 监听端口与进程 |
 | `oe-lab-svc-01` | systemctl active+enabled、firewall-cmd 的 runtime 与 permanent 双视图 |
 | `oe-lab-lvm-01` | PV → VG → LV → mkfs → fstab → lvextend -r |
 | `og-lab-grant-01` | 角色、schema、表三层授权（CONNECT / USAGE / SELECT），且不能多给 DELETE |
@@ -286,12 +287,12 @@ docs/labs.md                  实验说明（生成）
 - 103 道理论题全部有解析、全部归入小节，无重复无遗漏；其中 84 道来自源 Markdown，19 道为本站补充题。
 - 84 道基础题已固化为仓库内 JSON；clone 后无需原 Markdown 即可重新构建和校验。
 - 45 个小节均至少有 2 道理论题，可独立发起小节测验。
-- 6 个模拟实操可完整跑通并判分（实测 100 分满分路径与重置路径）。
+- 7 个模拟实操可完整跑通并判分（实测 100 分满分路径与重置路径）。
 - 资料台账与实验说明由脚本生成，与数据同源。
 - 已部署 GitHub Pages，`file://` 直开与线上 https 两种方式都跑过交互验收。
 - openEuler「命令与文件」两节（`oe-01-01`、`oe-01-02`）已真正达到发布门槛：2 条主资料用妙记转写+章节摘要完成内容验收并标 `verified`，`covers`/`gaps` 按实际内容校正，`check-ready.py` 九项全绿。
 - `oe-06-02`（firewalld 的两套配置）同样达标：主资料是阿里云图文，全文通读后标 `verified`，原文里往 `/proc` 追加 `ip_forward` 的写法错误记进了 `gaps`，并补了一条 zone 讲得更细的备用图文。
-- `tools/test-lab.mjs` 覆盖 18 条 chmod 写法 + 4 条实验判分路径 + 19 条文件/链接/归档用例，本地与线上各跑一遍全绿。
+- `tools/test-lab.mjs` 覆盖 18 条 chmod 写法 + 4 条实验判分路径 + 19 条文件/链接/归档用例 + 13 条网络用例，本地与线上各跑一遍全绿。
 
 待补：
 

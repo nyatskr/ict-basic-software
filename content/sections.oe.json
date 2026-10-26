@@ -477,7 +477,7 @@
     ],
     "pitfalls": ["把 `ip addr` 的结果当成持久配置", "以为 ping 通就代表端口在监听"],
     "question_ids": ["OE-23", "OE-24"],
-    "lab_ids": [],
+    "lab_ids": ["oe-lab-net-01"],
     "search_terms": ["nmcli 配置静态地址", "ss -lntp"],
     "gaps": "主视频 16:49 偏长，只看 connection/device 两节即可。"
   },

@@ -19,6 +19,7 @@
 | `og-lab-grant-01` | 最小权限授权 | openGauss | SQL 控制台 | L2 状态实验 | 5 | 80 |
 | `kp-lab-scan-01` | 迁移依赖审查：给 6 个组件定处理方式 | 鲲鹏应用开发 | 证据审查 | L1 引导模拟 | 6 | 80 |
 | `oe-lab-files-01` | 日志留存：硬链接、软链接与归档 | openEuler | 终端 | L2 状态实验 | 5 | 80 |
+| `oe-lab-net-01` | 换静态地址，再确认端口在监听 | openEuler | 终端 | L2 状态实验 | 6 | 80 |
 
 ## 协作目录：用户、组与权限（`oe-lab-perm-01`）
 
@@ -325,5 +326,59 @@ rm /srv/source/old.log
 stat /srv/keep/app.log
 cat /srv/backup/current
 tar -tzf /srv/backup/source.tar.gz
+```
+
+## 换静态地址，再确认端口在监听（`oe-lab-net-01`）
+
+- 类型：终端 · 层级：L2 状态实验 · 建议 15 分钟
+- 适用版本：openEuler 24.03-LTS-SP2
+- 归属：openEuler / oe-06 / oe-06-01 nmcli 与监听端口
+
+**场景**：这台服务器是刚接手的：eth0 还在用 DHCP 拿到的 192.168.10.50/24，网关 192.168.10.1 也是 DHCP 下发的。运维要求改成静态 192.168.10.80/24，网关不变，而且必须写进配置——重启 NetworkManager 之后还在，不能只在当前内核里生效。nginx 已经装好但没启动，改完地址后要确认 80 端口真的在监听。
+
+**这一题要练**
+
+- 分清 connection（保存的配置）与 device（网卡当前状态）两类对象
+- 用 nmcli connection modify + up 把静态地址写进配置并生效
+- 说清 ip addr add 为什么不算改配置
+- 用 ss -lntp 查监听端口与归属进程
+
+**任务**
+
+1. 看现在有哪些连接配置，eth0 这个网卡绑的是哪个连接
+2. 把 eth0 的连接改成手动地址 192.168.10.80/24，网关 192.168.10.1
+3. 让新配置生效，确认内核里的地址已经变成 .80
+4. 启动 nginx
+5. 用 ss -lntp 确认 80 端口在监听、属主是 nginx
+6. 验证持久性：配置里是 .80，内核里也只有 .80，没有 .50 残留
+
+**校验项（合计 100 分）**
+
+| 校验项 | 判据 | 分值 |
+| --- | --- | --- |
+| eth0 连接改为手动配置（ipv4.method=manual） | `network.connections.eth0.ipv4.method` == `manual` | 20 |
+| 配置里写入了 192.168.10.80/24 | `network.connections.eth0.ipv4.addresses` 含 `192.168.10.80/24` | 25 |
+| 配置里写入了网关 192.168.10.1 | `network.connections.eth0.ipv4.gateway` == `192.168.10.1` | 15 |
+| 内核里 eth0 已有 192.168.10.80/24 | `network.kernel.eth0` 含 `192.168.10.80/24` | 10 |
+| 内核里没有残留的 192.168.10.50/24 | `network.kernel.eth0` lacks 192.168.10.50/24 | 10 |
+| nginx 已启动，80 端口在监听 | `services.nginx.service.active` == `True` | 20 |
+
+**提示（可在页面逐条展开）**
+
+- `nmcli connection show` 看保存的配置，`nmcli device status` 看网卡当前绑了哪个连接。
+- `nmcli connection modify eth0 ipv4.method manual ipv4.addresses 192.168.10.80/24 ipv4.gateway 192.168.10.1`
+- modify 只改配置不生效，要 `nmcli connection up eth0`；`ip addr add` 反过来只改内核、不写配置。
+- `systemctl start nginx`，然后 `ss -lntp` 看 80 端口和它的进程名。
+
+**参考解法（只是一种写法）**
+
+```bash
+nmcli connection show
+nmcli device status
+nmcli connection modify eth0 ipv4.method manual ipv4.addresses 192.168.10.80/24 ipv4.gateway 192.168.10.1
+nmcli connection up eth0
+systemctl start nginx
+ss -lntp
+ip addr show dev eth0
 ```
 

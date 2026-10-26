@@ -484,5 +484,256 @@
       "mounts": {},
       "fstab": []
     }
+  },
+  {
+    "id": "oe-lab-net-01",
+    "kind": "linux",
+    "mode": "state-sim",
+    "level": "L2",
+    "title": "换静态地址，再确认端口在监听",
+    "subtitle": "connection 是配置，device 是网卡，ss 看的是内核",
+    "domain": "oe",
+    "topic_id": "oe-06",
+    "section_id": "oe-06-01",
+    "version": "openEuler 24.03-LTS-SP2",
+    "minutes": 15,
+    "scenario": "这台服务器是刚接手的：eth0 还在用 DHCP 拿到的 192.168.10.50/24，网关 192.168.10.1 也是 DHCP 下发的。运维要求改成静态 192.168.10.80/24，网关不变，而且必须写进配置——重启 NetworkManager 之后还在，不能只在当前内核里生效。nginx 已经装好但没启动，改完地址后要确认 80 端口真的在监听。",
+    "objectives": [
+      "分清 connection（保存的配置）与 device（网卡当前状态）两类对象",
+      "用 nmcli connection modify + up 把静态地址写进配置并生效",
+      "说清 ip addr add 为什么不算改配置",
+      "用 ss -lntp 查监听端口与归属进程"
+    ],
+    "tasks": [
+      {
+        "id": "t1",
+        "text": "看现在有哪些连接配置，eth0 这个网卡绑的是哪个连接"
+      },
+      {
+        "id": "t2",
+        "text": "把 eth0 的连接改成手动地址 192.168.10.80/24，网关 192.168.10.1"
+      },
+      {
+        "id": "t3",
+        "text": "让新配置生效，确认内核里的地址已经变成 .80"
+      },
+      {
+        "id": "t4",
+        "text": "启动 nginx"
+      },
+      {
+        "id": "t5",
+        "text": "用 ss -lntp 确认 80 端口在监听、属主是 nginx"
+      },
+      {
+        "id": "t6",
+        "text": "验证持久性：配置里是 .80，内核里也只有 .80，没有 .50 残留"
+      }
+    ],
+    "validators": [
+      {
+        "id": "v1",
+        "label": "eth0 连接改为手动配置（ipv4.method=manual）",
+        "weight": 20,
+        "path": [
+          "network",
+          "connections",
+          "eth0",
+          "ipv4",
+          "method"
+        ],
+        "op": "eq",
+        "value": "manual"
+      },
+      {
+        "id": "v2",
+        "label": "配置里写入了 192.168.10.80/24",
+        "weight": 25,
+        "path": [
+          "network",
+          "connections",
+          "eth0",
+          "ipv4",
+          "addresses"
+        ],
+        "op": "contains",
+        "value": "192.168.10.80/24"
+      },
+      {
+        "id": "v3",
+        "label": "配置里写入了网关 192.168.10.1",
+        "weight": 15,
+        "path": [
+          "network",
+          "connections",
+          "eth0",
+          "ipv4",
+          "gateway"
+        ],
+        "op": "eq",
+        "value": "192.168.10.1"
+      },
+      {
+        "id": "v4",
+        "label": "内核里 eth0 已有 192.168.10.80/24",
+        "weight": 10,
+        "path": [
+          "network",
+          "kernel",
+          "eth0"
+        ],
+        "op": "contains",
+        "value": "192.168.10.80/24"
+      },
+      {
+        "id": "v5",
+        "label": "内核里没有残留的 192.168.10.50/24",
+        "weight": 10,
+        "path": [
+          "network",
+          "kernel",
+          "eth0"
+        ],
+        "op": "lacks",
+        "value": "192.168.10.50/24"
+      },
+      {
+        "id": "v6",
+        "label": "nginx 已启动，80 端口在监听",
+        "weight": 20,
+        "path": [
+          "services",
+          "nginx.service",
+          "active"
+        ],
+        "op": "eq",
+        "value": true
+      }
+    ],
+    "hints": [
+      {
+        "text": "`nmcli connection show` 看保存的配置，`nmcli device status` 看网卡当前绑了哪个连接。",
+        "cost": 5
+      },
+      {
+        "text": "`nmcli connection modify eth0 ipv4.method manual ipv4.addresses 192.168.10.80/24 ipv4.gateway 192.168.10.1`",
+        "cost": 5
+      },
+      {
+        "text": "modify 只改配置不生效，要 `nmcli connection up eth0`；`ip addr add` 反过来只改内核、不写配置。",
+        "cost": 5
+      },
+      {
+        "text": "`systemctl start nginx`，然后 `ss -lntp` 看 80 端口和它的进程名。",
+        "cost": 5
+      }
+    ],
+    "solution": [
+      "nmcli connection show",
+      "nmcli device status",
+      "nmcli connection modify eth0 ipv4.method manual ipv4.addresses 192.168.10.80/24 ipv4.gateway 192.168.10.1",
+      "nmcli connection up eth0",
+      "systemctl start nginx",
+      "ss -lntp",
+      "ip addr show dev eth0"
+    ],
+    "initial_state": {
+      "host": "euler01",
+      "user": "root",
+      "cwd": "/root",
+      "umask": "022",
+      "users": {
+        "root": {
+          "uid": 0,
+          "groups": [
+            "root"
+          ],
+          "home": "/root",
+          "shell": "/bin/bash"
+        }
+      },
+      "groups": {
+        "root": {
+          "gid": 0
+        }
+      },
+      "files": {
+        "/": {
+          "type": "dir",
+          "owner": "root",
+          "group": "root",
+          "mode": "755"
+        },
+        "/root": {
+          "type": "dir",
+          "owner": "root",
+          "group": "root",
+          "mode": "550"
+        },
+        "/etc": {
+          "type": "dir",
+          "owner": "root",
+          "group": "root",
+          "mode": "755"
+        },
+        "/etc/fstab": {
+          "type": "file",
+          "owner": "root",
+          "group": "root",
+          "mode": "644",
+          "content": "UUID=1f2a-3c4d / xfs defaults 0 0\n"
+        }
+      },
+      "services": {
+        "nginx.service": {
+          "active": false,
+          "enabled": true,
+          "port": 80,
+          "desc": "The nginx HTTP Server"
+        }
+      },
+      "firewall": null,
+      "network": {
+        "devices": {
+          "lo": {
+            "type": "loopback",
+            "state": "unmanaged",
+            "connection": "",
+            "mac": "00:00:00:00:00:00"
+          },
+          "eth0": {
+            "type": "ethernet",
+            "state": "connected",
+            "connection": "eth0",
+            "mac": "52:54:00:1a:2b:3c"
+          }
+        },
+        "connections": {
+          "eth0": {
+            "type": "ethernet",
+            "active": true,
+            "ipv4": {
+              "method": "auto",
+              "addresses": [],
+              "gateway": ""
+            }
+          }
+        },
+        "kernel": {
+          "lo": [
+            "127.0.0.1/8"
+          ],
+          "eth0": [
+            "192.168.10.50/24"
+          ]
+        }
+      },
+      "disks": {},
+      "pvs": {},
+      "vgs": {},
+      "lvs": {},
+      "mounts": {},
+      "fstab": []
+    }
   }
 ]

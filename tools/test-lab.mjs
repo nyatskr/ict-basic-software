@@ -359,6 +359,114 @@ const FILE_CASES = [
   },
 ];
 
+/* oe-lab-net-01：网络这块要同时看两套视图——连接里的配置、内核里的地址。
+ * 所以用例既测命令输出，也测这两套状态是否被分别改到。
+ */
+const NET_LAB = 'oe-lab-net-01';
+const MODIFY = 'nmcli connection modify eth0 ipv4.method manual ipv4.addresses 192.168.10.80/24 ipv4.gateway 192.168.10.1';
+const NET_CASES = [
+  {
+    name: '初始：配置是 auto、内核是 .50',
+    cmds: [],
+    probe: `
+      const st = E.cur().st;
+      return st.network.connections.eth0.ipv4.method + '|'
+        + (st.network.kernel.eth0 || []).join(',') + '|'
+        + st.network.devices.eth0.state;`,
+    want: 'auto|192.168.10.50/24|connected',
+  },
+  {
+    name: 'modify 只改配置，不动内核',
+    cmds: [MODIFY],
+    probe: `
+      const st = E.cur().st;
+      const c = st.network.connections.eth0.ipv4;
+      return c.method + '|' + c.addresses.join(',') + '|' + c.gateway + '|'
+        + (st.network.kernel.eth0 || []).join(',');`,
+    want: 'manual|192.168.10.80/24|192.168.10.1|192.168.10.50/24',
+  },
+  {
+    name: 'up 之后内核按配置重建',
+    cmds: [MODIFY, 'nmcli connection up eth0'],
+    probe: `
+      const st = E.cur().st;
+      return (st.network.kernel.eth0 || []).join(',');`,
+    want: '192.168.10.80/24',
+  },
+  {
+    name: 'ip addr add 只改内核，不写配置',
+    cmds: ['ip addr add 192.168.10.80/24 dev eth0'],
+    probe: `
+      const st = E.cur().st;
+      return st.network.connections.eth0.ipv4.method + '|'
+        + (st.network.kernel.eth0 || []).join(',');`,
+    want: 'auto|192.168.10.50/24,192.168.10.80/24',
+  },
+  {
+    name: 'down 会清空内核地址',
+    cmds: [MODIFY, 'nmcli connection up eth0', 'nmcli connection down eth0'],
+    probe: `
+      const st = E.cur().st;
+      return st.network.devices.eth0.state + '|'
+        + ((st.network.kernel.eth0 || []).length || 0) + '|'
+        + (st.network.connections.eth0.active ? 'active' : 'inactive');`,
+    want: 'disconnected|0|inactive',
+  },
+  {
+    name: 'ss 初始只有 sshd 的 22',
+    cmds: [],
+    probe: `
+      const rows = E.exec('ss -lntp').filter((o) => !o.cls).map((o) => o.text);
+      return rows.filter((r) => /LISTEN/.test(r)).map((r) => r.trim().split(/\\s+/)[3]).join(',');`,
+    want: '0.0.0.0:22',
+  },
+  {
+    name: 'nginx 起来后 ss 多一条 80',
+    cmds: ['systemctl start nginx'],
+    probe: `
+      const rows = E.exec('ss -lntp').filter((o) => !o.cls).map((o) => o.text);
+      const listen = rows.filter((r) => r.indexOf('LISTEN') >= 0);
+      const has80 = listen.some((r) => r.indexOf(':80') >= 0 && r.indexOf('nginx') >= 0);
+      return listen.length + '|' + (has80 ? 'nginx' : 'no');`,
+    want: '2|nginx',
+  },
+  {
+    name: '错误连接名与不存在的设备都报错',
+    cmds: [],
+    probe: `
+      const bad = ['nmcli connection up nosuch', 'nmcli connection show nosuch', 'ip addr add 10.0.0.1/24 dev eth9'];
+      return bad.map((c) => (E.exec(c).some((o) => o.cls === 'err') ? 'E' : 'ok')).join('');`,
+    want: 'EEE',
+  },
+  {
+    name: 'nmcli 不认识的子命令报错',
+    cmds: [],
+    probe: `
+      return E.exec('nmcli connection dance eth0').some((o) => o.cls === 'err') ? 'E' : 'ok';`,
+    want: 'E',
+  },
+  {
+    name: '满分：modify + up + 起 nginx',
+    cmds: [MODIFY, 'nmcli connection up eth0', 'systemctl start nginx'],
+    score: 100,
+  },
+  {
+    name: '只用 ip addr add：配置没改，扣 70',
+    cmds: ['ip addr add 192.168.10.80/24 dev eth0', 'systemctl start nginx'],
+    score: 30, // 只拿到 v4 10 分 + v6 20 分
+  },
+  {
+    name: '只 modify 不 up：配置改了，内核没变',
+    cmds: [MODIFY],
+    score: 60, // v1+v2+v3 拿到 60，v4/v5（内核）与 v6（nginx）都挂
+  },
+  {
+    name: '配置和内核都对，忘了起 nginx，扣 20',
+    cmds: [MODIFY, 'nmcli connection up eth0'],
+    score: 80,
+  },
+];
+
 async function main() {
   const only = process.argv[2];
   await sleep(800);
@@ -438,6 +546,23 @@ async function main() {
       const ok = got === want;
       if (!ok) bad++;
       console.log(`${ok ? 'ok  ' : 'FAIL'}  ${c.name.padEnd(26)} ${String(got)}  期望 ${String(want)}`);
+    }
+  }
+
+  if (!only || only === 'net') {
+    console.log('\n== 网络（' + NET_LAB + '）');
+    for (const c of NET_CASES) {
+      const got = await evalJs(`(() => {
+        const E = LP.labEngine;
+        E.reset();
+        E.open(${JSON.stringify(NET_LAB)});
+        for (const cmd of ${JSON.stringify(c.cmds)}) E.exec(cmd);
+        ${c.score !== undefined ? 'return E.check().score;' : c.probe}
+      })()`);
+      const want = c.score !== undefined ? c.score : c.want;
+      const ok = got === want;
+      if (!ok) bad++;
+      console.log(`${ok ? 'ok  ' : 'FAIL'}  ${c.name.padEnd(30)} ${String(got)}  期望 ${String(want)}`);
     }
   }
 
