@@ -37,11 +37,37 @@ https://mvrdlzjnhxzhqxszpcgi.supabase.co/auth/v1/callback
 
 同步范围：作答记录、错题次数、收藏、待复习、实验最好成绩与通过状态。
 
-合并规则（与导入一致）：同一题保留最近一次作答，错误次数取较大值，收藏与待复习取并集；
+合并规则（与导入一致）：同一题保留最近一次作答，错误次数取较大值；
+收藏与待复习分别记录最后修改时间，合并时由修改时间较新的一边决定，
+所以**添加和取消都能跨设备传播**。旧记录没有修改时间时仍按并集处理，避免升级时丢失已有收藏；
 实验的次数与最好成绩取较大值，通过取并集。
 
-> **已知限制**：记录里没有「收藏/待复习的修改时间」，所以取消收藏无法跨设备传播——
-> A 设备收藏过，B 设备取消后同步，会变回收藏。要修得给记录加时间戳，属于数据结构变更。
+## 已有表升级（v1 → v2）
+
+如果表是在「收藏/待复习时间戳」之前建的，先执行这两条再加代码，否则同步会因为查不到列而失败：
+
+```sql
+alter table public.ict_progress_records
+  add column if not exists favorite_updated_at bigint not null default 0
+    check (favorite_updated_at >= 0);
+
+alter table public.ict_progress_records
+  add column if not exists review_updated_at bigint not null default 0
+    check (review_updated_at >= 0);
+```
+
+老数据自动得到 `0`，不需要人工回填。验证：
+
+```sql
+select qid, favorite, favorite_updated_at, needs_review, review_updated_at
+from public.ict_progress_records
+limit 20;
+```
+
+不要复用 `updated_at`：它随答题、错误次数一起变，判断不出最后改的是哪个字段。
+
+> 升级前已经发生、但还没同步过的「取消收藏」没有时间证据，无法自动推断。
+> 部署后在任意一台设备上重新取消一次即可，之后的添加和取消都会正常传播。
 
 ---
 
@@ -72,7 +98,12 @@ create table if not exists public.ict_progress_records (
     check (wrong_count >= 0),
 
   favorite boolean not null default false,
+  favorite_updated_at bigint not null default 0
+    check (favorite_updated_at >= 0),
+
   needs_review boolean not null default false,
+  review_updated_at bigint not null default 0
+    check (review_updated_at >= 0),
 
   updated_at timestamptz not null default now(),
 

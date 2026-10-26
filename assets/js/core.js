@@ -189,6 +189,12 @@
 
   /* ---------------- 进度记录 ---------------- */
 
+  /* 时间戳统一走这里：非法值一律当 0，避免 NaN 混进比较 */
+  const safeTime = (value) => Math.max(0, Number(value) || 0);
+
+  /* 同一毫秒内连续修改时，时间仍然要往前走一格，否则后者覆盖不了前者 */
+  const nextTime = (previous) => Math.max(Date.now(), safeTime(previous) + 1);
+
   function emptyRecord(qid) {
     return {
       qid,
@@ -199,7 +205,9 @@
       attempts: 0,
       wrongCount: 0,
       favorite: false,
+      favoriteUpdatedAt: 0,
       needsReview: false,
+      reviewUpdatedAt: 0,
     };
   }
 
@@ -234,6 +242,7 @@
   LP.toggleFavorite = (qid) => {
     const rec = LP.ensureRecord(qid);
     rec.favorite = !rec.favorite;
+    rec.favoriteUpdatedAt = nextTime(rec.favoriteUpdatedAt);
     LP.saveProgress();
     return rec.favorite;
   };
@@ -241,45 +250,96 @@
   LP.toggleReview = (qid) => {
     const rec = LP.ensureRecord(qid);
     rec.needsReview = !rec.needsReview;
+    rec.reviewUpdatedAt = nextTime(rec.reviewUpdatedAt);
     LP.saveProgress();
     return rec.needsReview;
+  };
+
+  /* 「取消收藏 / 移出待复习」在错题本、收藏页也走这里，时间戳不能漏 */
+  const FLAG_STAMP = {
+    favorite: 'favoriteUpdatedAt',
+    needsReview: 'reviewUpdatedAt',
   };
 
   LP.clearRecordFlag = (qid, flag) => {
     const rec = state.progress.records[qid];
     if (!rec) return;
     rec[flag] = false;
+    const stamp = FLAG_STAMP[flag];
+    if (stamp) rec[stamp] = nextTime(rec[stamp]);
     LP.saveProgress();
   };
 
   LP.recordList = () => Object.values(state.progress.records);
 
-  /* 合并一条外部记录到本地（导入 / 云同步共用规则）：
-     作答取较新，次数与错误数取较大，收藏与待复习取并集。 */
-  LP.mergeRecord = (cur, inc) => {
-    if (!cur) {
-      return {
-        qid: inc.qid,
-        bankVersion: inc.bankVersion || '',
-        selected: Array.isArray(inc.selected) ? inc.selected.slice() : [],
-        correct: !!inc.correct,
-        answeredAt: inc.answeredAt || 0,
-        attempts: inc.attempts || (inc.answeredAt ? 1 : 0),
-        wrongCount: inc.wrongCount || 0,
-        favorite: !!inc.favorite,
-        needsReview: !!inc.needsReview,
-      };
+  /* 一条记录是否值得同步 / 导出：作答过，或带收藏、待复习状态。
+     「已取消收藏」的记录也必须算 —— 它带着 favoriteUpdatedAt 墓碑，
+     丢了的话别的设备就不知道用户取消过。 */
+  LP.hasSyncState = (r) =>
+    !!r &&
+    ((r.attempts || 0) > 0 ||
+      r.favorite ||
+      r.needsReview ||
+      (r.favoriteUpdatedAt || 0) > 0 ||
+      (r.reviewUpdatedAt || 0) > 0);
+
+  /* 记录标准化：兼容旧本机数据与旧导出文件（缺两个时间字段时补 0） */
+  LP.normalizeRecord = (src) => {
+    const rec = emptyRecord(src && src.qid ? String(src.qid) : '');
+    if (!src) return rec;
+
+    rec.bankVersion = src.bankVersion || '';
+    rec.selected = Array.isArray(src.selected) ? src.selected.slice() : [];
+    rec.correct = !!src.correct;
+    rec.answeredAt = safeTime(src.answeredAt);
+    rec.attempts = Math.max(0, Number(src.attempts) || 0);
+    if (!rec.attempts && rec.answeredAt) rec.attempts = 1;
+    rec.wrongCount = Math.max(0, Number(src.wrongCount) || 0);
+
+    rec.favorite = !!src.favorite;
+    rec.favoriteUpdatedAt = safeTime(src.favoriteUpdatedAt);
+    rec.needsReview = !!src.needsReview;
+    rec.reviewUpdatedAt = safeTime(src.reviewUpdatedAt);
+
+    return rec;
+  };
+
+  /* 布尔标记按「最后修改时间」取胜；两边都是旧数据（没有时间）时退回并集，
+     避免升级过程中把已有收藏弄丢。 */
+  function mergeFlag(cur, inc, valueKey, timeKey) {
+    const curTime = safeTime(cur[timeKey]);
+    const incTime = safeTime(inc[timeKey]);
+
+    if (incTime > curTime) {
+      cur[valueKey] = !!inc[valueKey];
+      cur[timeKey] = incTime;
+      return;
     }
-    if ((inc.answeredAt || 0) > (cur.answeredAt || 0)) {
-      cur.selected = Array.isArray(inc.selected) ? inc.selected.slice() : cur.selected;
-      cur.correct = !!inc.correct;
-      cur.answeredAt = inc.answeredAt || 0;
+    if (!curTime && !incTime) {
+      cur[valueKey] = !!cur[valueKey] || !!inc[valueKey];
+      cur[timeKey] = 0;
+    }
+  }
+
+  /* 合并一条外部记录到本地（JSON 导入 / 云同步 / 登录迁移共用同一套规则）：
+     作答取较新，次数与错误数取较大，收藏与待复习按最后修改时间取胜。 */
+  LP.mergeRecord = (cur, src) => {
+    const inc = LP.normalizeRecord(src);
+    if (!cur) return inc;
+
+    if (inc.answeredAt > safeTime(cur.answeredAt)) {
+      cur.selected = inc.selected.slice();
+      cur.correct = inc.correct;
+      cur.answeredAt = inc.answeredAt;
       cur.bankVersion = inc.bankVersion || cur.bankVersion;
     }
-    cur.attempts = Math.max(cur.attempts || 0, inc.attempts || 0);
-    cur.wrongCount = Math.max(cur.wrongCount || 0, inc.wrongCount || 0);
-    cur.favorite = cur.favorite || !!inc.favorite;
-    cur.needsReview = cur.needsReview || !!inc.needsReview;
+
+    cur.attempts = Math.max(cur.attempts || 0, inc.attempts);
+    cur.wrongCount = Math.max(cur.wrongCount || 0, inc.wrongCount);
+
+    mergeFlag(cur, inc, 'favorite', 'favoriteUpdatedAt');
+    mergeFlag(cur, inc, 'needsReview', 'reviewUpdatedAt');
+
     return cur;
   };
 
@@ -485,7 +545,7 @@
       let active = 0;
       Object.keys(p.records).forEach((qid) => {
         const r = p.records[qid] || {};
-        if ((r.attempts || 0) > 0 || r.favorite || r.needsReview) active++;
+        if (LP.hasSyncState(r)) active++;
       });
       const labs = Object.keys(p.labs || {}).length;
       if (!active && !labs) return;
@@ -548,10 +608,11 @@
 
   LP.exportPayload = () => ({
     kind: 'ict-basic-software-progress',
-    schemaVersion: 1,
+    schemaVersion: 2,
     bankVersion: state.bank ? state.bank.bank_version : '',
     exportedAt: new Date().toISOString(),
-    records: LP.recordList().filter((r) => r.attempts > 0 || r.favorite || r.needsReview),
+    /* 用 hasSyncState：把「已取消收藏」的墓碑记录也带上 */
+    records: LP.recordList().filter(LP.hasSyncState),
     labs: state.progress.labs,
   });
 })();

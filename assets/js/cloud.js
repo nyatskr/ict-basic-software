@@ -176,7 +176,9 @@
       attempts: row.attempts,
       wrongCount: row.wrong_count,
       favorite: row.favorite,
+      favoriteUpdatedAt: row.favorite_updated_at,
       needsReview: row.needs_review,
+      reviewUpdatedAt: row.review_updated_at,
     });
   }
 
@@ -191,7 +193,9 @@
       attempts: rec.attempts || 0,
       wrong_count: rec.wrongCount || 0,
       favorite: !!rec.favorite,
+      favorite_updated_at: rec.favoriteUpdatedAt || 0,
       needs_review: !!rec.needsReview,
+      review_updated_at: rec.reviewUpdatedAt || 0,
     };
   }
 
@@ -218,7 +222,8 @@
   }
 
   const RECORD_COLUMNS =
-    'qid,bank_version,selected,correct,answered_at,attempts,wrong_count,favorite,needs_review';
+    'qid,bank_version,selected,correct,answered_at,attempts,wrong_count,' +
+    'favorite,favorite_updated_at,needs_review,review_updated_at';
   const LAB_COLUMNS = 'lab_id,attempts,best,passed,at';
 
   /* ---------------- 同步 ---------------- */
@@ -280,9 +285,10 @@
   }
 
   async function push() {
-    const rows = LP.recordList()
-      .filter((r) => (r.attempts || 0) > 0 || r.favorite || r.needsReview)
-      .map(recordToRow);
+    /* hasSyncState 而不是「有作答或当前是收藏」：
+       先收藏再取消、且从没答过的题，三个布尔都是 false，
+       但它带着 favoriteUpdatedAt 墓碑，必须上传才能让别的设备收到取消。 */
+    const rows = LP.recordList().filter(LP.hasSyncState).map(recordToRow);
     for (let i = 0; i < rows.length; i += CHUNK) {
       const { error } = await client
         .from(TABLE)
@@ -461,8 +467,7 @@
     if (!guest) return 0;
     let n = 0;
     Object.keys(guest.records).forEach((qid) => {
-      const r = guest.records[qid] || {};
-      if ((r.attempts || 0) > 0 || r.favorite || r.needsReview) n++;
+      if (LP.hasSyncState(guest.records[qid])) n++;
     });
     return n + Object.keys(guest.labs || {}).length;
   }

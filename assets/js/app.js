@@ -806,33 +806,24 @@
       }
       const valid = new Set(q.options.map((o) => o.id));
       const sel = (Array.isArray(rec.selected) ? rec.selected : []).filter((id) => valid.has(id));
-      const cur = LP.state.progress.records[rec.qid];
-      if (!cur) {
-        LP.state.progress.records[rec.qid] = {
-          qid: rec.qid,
-          bankVersion: rec.bankVersion || '',
-          selected: sel,
-          correct: !!rec.correct,
-          answeredAt: rec.answeredAt || 0,
-          attempts: rec.attempts || (rec.answeredAt ? 1 : 0),
-          wrongCount: rec.wrongCount || 0,
-          favorite: !!rec.favorite,
-          needsReview: !!rec.needsReview,
-        };
-        added++;
-      } else {
-        if ((rec.answeredAt || 0) > (cur.answeredAt || 0)) {
-          cur.selected = sel;
-          cur.correct = !!rec.correct;
-          cur.answeredAt = rec.answeredAt || 0;
-          cur.bankVersion = rec.bankVersion || cur.bankVersion;
-        }
-        cur.attempts = Math.max(cur.attempts || 0, rec.attempts || 0);
-        cur.wrongCount = Math.max(cur.wrongCount || 0, rec.wrongCount || 0);
-        cur.favorite = cur.favorite || !!rec.favorite;
-        cur.needsReview = cur.needsReview || !!rec.needsReview;
-        updated++;
-      }
+      const existed = !!LP.state.progress.records[rec.qid];
+      /* 统一走 LP.mergeRecord：和云同步、登录迁移共用同一套合并规则，
+         收藏 / 待复习按最后修改时间取胜，不再是无脑并集。 */
+      LP.state.progress.records[rec.qid] = LP.mergeRecord(LP.state.progress.records[rec.qid], {
+        qid: rec.qid,
+        bankVersion: rec.bankVersion || '',
+        selected: sel,
+        correct: !!rec.correct,
+        answeredAt: rec.answeredAt || 0,
+        attempts: rec.attempts || 0,
+        wrongCount: rec.wrongCount || 0,
+        favorite: !!rec.favorite,
+        favoriteUpdatedAt: rec.favoriteUpdatedAt || 0,
+        needsReview: !!rec.needsReview,
+        reviewUpdatedAt: rec.reviewUpdatedAt || 0,
+      });
+      if (existed) updated++;
+      else added++;
     });
 
     let labMerged = 0;

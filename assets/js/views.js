@@ -1235,7 +1235,7 @@
     if (!c) return '';
     const st = c.status();
     const user = st.user;
-    const active = LP.recordList().filter((r) => r.attempts > 0 || r.favorite || r.needsReview).length;
+    const active = LP.recordList().filter(LP.hasSyncState).length;
     const labCount = Object.keys(LP.state.progress.labs || {}).length;
 
     let dot = '';
