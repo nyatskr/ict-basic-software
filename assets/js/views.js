@@ -495,7 +495,7 @@
         (sec.notes && sec.notes.length
           ? '<div class="note-block">' +
               sec.notes
-                .map((n) => '<div class="note-item"><h4>' + esc(n.h) + '</h4><p>' + rich(n.t) + '</p></div>')
+                .map((n) => '<div class="note-item"><h4>' + rich(n.h) + '</h4><p>' + rich(n.t) + '</p></div>')
                 .join('') +
             '</div>'
           : '<p class="muted">这一节的文字补充还在写。</p>') +
@@ -581,7 +581,7 @@
         '<div class="muted small">' + esc(sec.id) + ' · ' + esc(t.title) + ' · 约 ' + sec.minutes + ' 分钟' +
           (ready ? '' : ' · 内容待补') + '</div>' +
         '<h1>' + esc(sec.title) + '</h1>' +
-        '<p>' + (sec.objectives && sec.objectives.length ? esc(sec.objectives[0]) : '') + '</p>' +
+        '<p>' + (sec.objectives && sec.objectives.length ? rich(sec.objectives[0]) : '') + '</p>' +
         '<div class="sec-flow">' +
           '<a class="flow-step" href="#sec-obj"><b>1</b> 学习目标</a>' +
           '<a class="flow-step" href="#sec-res"><b>2</b> 资料</a>' +
