@@ -7,6 +7,11 @@
 
 纯静态站点，无构建依赖、无后端。双击 `index.html` 就能用（`file://` 直接打开，不需要起服务器）。
 
+| | 地址 |
+| --- | --- |
+| 在线访问 | https://nyatskr.github.io/ict-basic-software/ |
+| 源码仓库 | https://github.com/nyatskr/ict-basic-software |
+
 ---
 
 ## 快速开始
