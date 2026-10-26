@@ -37,6 +37,11 @@ python tools/build-data.py "路径/....md" --check
 
 # 重新生成 docs/ 下的资料台账与实验说明
 python tools/build-docs.py
+
+# 实验引擎回归测试（需要本机有 Chrome，或设 CHROME_PATH）
+node tools/test-lab.mjs          # 全部
+node tools/test-lab.mjs chmod    # 只跑 chmod 符号模式
+node tools/test-lab.mjs lab      # 只跑实验判分
 ```
 
 ---
@@ -158,6 +163,7 @@ content/explanations.json     源文档缺失的解析
 tools/parse-questions.py      解析题库 Markdown 第 9 章
 tools/build-data.py           合并 + 校验 + 生成 assets/js/data/*.js
 tools/build-docs.py           生成 docs/resources.md 与 docs/labs.md
+tools/test-lab.mjs            实验引擎回归测试（headless Chrome 里跑真命令）
 docs/resources.md             资料台账（生成）
 docs/labs.md                  实验说明（生成）
 ```
@@ -207,6 +213,8 @@ docs/labs.md                  实验说明（生成）
 - 44 个小节均至少有 2 道理论题，可独立发起小节测验。
 - 5 个模拟实操可完整跑通并判分（实测 100 分满分路径与重置路径）。
 - 资料台账与实验说明由脚本生成，与数据同源。
+- 已部署 GitHub Pages，`file://` 直开与线上 https 两种方式都跑过交互验收。
+- `tools/test-lab.mjs` 覆盖 18 条 chmod 写法 + 4 条实验判分路径，本地与线上各跑一遍全绿。
 
 待补：
 
