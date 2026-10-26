@@ -83,7 +83,8 @@ def load_source_questions(markdown=None):
 
 
 def write_json(path, data):
-    with open(path, "w", encoding="utf-8") as f:
+    # newline="\n" 固定换行符：Windows 上默认会写成 \r\n，导致同一份内容在不同平台产生 diff
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
         f.write("\n")
 

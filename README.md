@@ -41,6 +41,9 @@ python tools/build-data.py "路径/华为ICT大赛_基础软件赛道_历年真�
 # 全量内容校验（题号归属、答案解析、域/cluster、反引号、产物新鲜度）
 python tools/check-content.py
 
+# 核对资料链接：还活着吗、标题/作者/时长有没有漂移（B 站条目需要 yt-dlp）
+python tools/check-resources.py
+
 # 重新生成 docs/ 下的资料台账与实验说明
 python tools/build-docs.py
 
@@ -144,6 +147,28 @@ covers[] gaps version_note checked_at note
 4. 每个小节至少准备一条备用资料。
 5. 完整台账见 [docs/resources.md](docs/resources.md)（由脚本生成，不要手改）。
 
+### 链接核对能做什么、不能做什么
+
+`tools/check-resources.py` 用 yt-dlp 逐条探测，能自动确认：
+
+- 链接是否还能打开（`dead`）
+- 标题、作者、时长是否与台账记录一致（漂移说明视频被替换或当初记错）
+- UP 主账号是否已注销（视频还在但随时可能消失，必须补备用资料）
+
+它**不能**替代人工验收：元数据全对，也不代表视频里真讲了 `covers` 里写的那些点。
+`status` 仍只能靠人看完再改。
+
+关于用 Whisper 自动转写来辅助验收，实测结论（`BV1az421b7ub`，130 秒，`small` int8，CPU）：
+
+- 速度约 **0.48x 实时**，本站 5.2 小时音频约需 2.5 小时 CPU。
+- 不加提示词时中文术语大面积出错：`属主` 对 2 次错 8 次、`属组` 一次都没对、`八进制` 8 次全错成`八禁制`。
+- 用 `initial_prompt` 注入术语表后，中文术语基本可靠（`属主` 9 次全对、`八进制` 8 次全对），
+  但**英文单字母权限串依然不可用**：`rwx` 会变成 `二wx`、`r-x` 变成 `二杆x`。
+
+因此转写稿只能用来**定位**（“这段讲了 setgid 吗，在 3:20 左右”），
+不能用来抄命令、权限串或参数。字幕也不进仓库：B 站视频绝大多数没有字幕，
+转录稿既含识别错误又涉及第三方内容版权，只作本地工作底稿。
+
 ---
 
 ## 目录结构
@@ -170,6 +195,7 @@ content/explanations.json     源文档缺失的解析
 tools/parse-questions.py      解析题库 Markdown 第 9 章
 tools/build-data.py           自包含构建；也可从 Markdown 刷新基础题
 tools/check-content.py        全量内容一致性与富文本风险校验
+tools/check-resources.py      资料链接存活与元数据漂移核对（需 yt-dlp）
 tools/build-docs.py           生成 docs/resources.md 与 docs/labs.md
 tools/test-lab.mjs            实验引擎回归测试（headless Chrome 里跑真命令）
 docs/resources.md             资料台账（生成）
