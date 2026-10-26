@@ -467,6 +467,120 @@ const NET_CASES = [
   },
 ];
 
+/* oe-lab-pkg-01：装包要真的把文件落进文件系统，rpm -qf 才能查得到归属 */
+const PKG_LAB = 'oe-lab-pkg-01';
+const PKG_CASES = [
+  {
+    name: '初始装了 4 个包',
+    cmds: [],
+    probe: `return Object.keys(E.cur().st.packages.installed).sort().join(',');`,
+    want: 'bash,coreutils,httpd-tools,systemd',
+  },
+  {
+    name: 'repolist 只列启用的仓库',
+    cmds: [],
+    probe: `
+      const rows = E.exec('dnf repolist').filter((o) => !o.cls).map((o) => o.text);
+      return rows.slice(1).map((r) => r.trim().split(/\\s+/)[0]).join(',');`,
+    want: 'openEuler-everything',
+  },
+  {
+    name: '装 nginx 自动带上 nginx-core',
+    cmds: ['dnf install -y nginx'],
+    probe: `
+      const st = E.cur().st;
+      return Object.keys(st.packages.installed).filter((n) => n.indexOf('nginx') === 0).sort().join(',');`,
+    want: 'nginx,nginx-core',
+  },
+  {
+    name: '装包后文件真的落盘',
+    cmds: ['dnf install -y nginx'],
+    probe: `
+      const st = E.cur().st;
+      const f = st.files['/etc/nginx/nginx.conf'];
+      return (f ? f.pkg + '/' + f.mode : '缺失') + '|'
+        + (st.files['/usr/sbin/nginx'] ? st.files['/usr/sbin/nginx'].mode : '缺失');`,
+    want: 'nginx-core/644|755',
+  },
+  {
+    name: 'rpm -qf 反查文件归属',
+    cmds: ['dnf install -y nginx'],
+    probe: `
+      const rows = E.exec('rpm -qf /etc/nginx/nginx.conf').filter((o) => !o.cls).map((o) => o.text);
+      return rows[rows.length - 1];`,
+    want: 'nginx-core-1.24.0-1.aarch64',
+  },
+  {
+    name: 'rpm -qf 查没有归属的文件报错',
+    cmds: [],
+    probe: `
+      const out = E.exec('rpm -qf /etc/fstab');
+      return out.some((o) => o.cls === 'err' && /not owned by any package/.test(o.text)) ? 'E' : 'ok';`,
+    want: 'E',
+  },
+  {
+    name: 'rpm -ql 列出包内文件',
+    cmds: ['dnf install -y nginx'],
+    probe: `
+      const rows = E.exec('rpm -ql nginx-core').filter((o) => !o.cls).map((o) => o.text);
+      return rows.length + '|' + (rows.indexOf('/etc/nginx/nginx.conf') >= 0 ? 'hasConf' : 'noConf');`,
+    want: '3|hasConf',
+  },
+  {
+    name: '删包时文件一起删掉',
+    cmds: ['dnf remove httpd-tools'],
+    probe: `
+      const st = E.cur().st;
+      return (st.packages.installed['httpd-tools'] ? '包还在' : '包没了') + '|'
+        + (st.files['/usr/bin/ab'] ? '文件还在' : '文件没了') + '|'
+        + (st.files['/usr/bin/bash'] ? 'bash 在' : 'bash 没了');`,
+    want: '包没了|文件没了|bash 在',
+  },
+  {
+    name: '装不存在的包报错',
+    cmds: [],
+    probe: `return E.exec('dnf install -y nosuchpkg').some((o) => o.cls === 'err') ? 'E' : 'ok';`,
+    want: 'E',
+  },
+  {
+    name: '重复安装不改变状态',
+    cmds: ['dnf install -y nginx', 'dnf install -y nginx'],
+    probe: `
+      const st = E.cur().st;
+      const h = st.packages.history || [];
+      return h.length + '|' + (E.exec('dnf install -y nginx').some((o) => /already installed/.test(o.text)) ? 'said' : 'silent');`,
+    want: '1|said',
+  },
+  {
+    name: 'dnf history 记下事务',
+    cmds: ['dnf install -y nginx', 'dnf remove httpd-tools'],
+    probe: `
+      const rows = E.exec('dnf history').filter((o) => !o.cls).map((o) => o.text.trim());
+      return rows.filter((r) => /^[0-9]+\\s*\\|/.test(r)).length + '|' + (rows.join(' ').indexOf('remove httpd-tools') >= 0 ? 'hasRemove' : 'noRemove');`,
+    want: '2|hasRemove',
+  },
+  {
+    name: '满分：装 nginx + 删 httpd-tools',
+    cmds: ['dnf install -y nginx', 'dnf remove httpd-tools'],
+    score: 100,
+  },
+  {
+    name: '忘了删 httpd-tools，扣 20',
+    cmds: ['dnf install -y nginx'],
+    score: 80,
+  },
+  {
+    name: '装错包：装成 vim-enhanced，扣 65',
+    cmds: ['dnf install -y vim-enhanced', 'dnf remove httpd-tools'],
+    score: 35, // v3 20 + v4 15
+  },
+  {
+    name: '顺手把 bash 删了，扣 15',
+    cmds: ['dnf install -y nginx', 'dnf remove httpd-tools', 'dnf remove bash'],
+    score: 85,
+  },
+];
+
 async function main() {
   const only = process.argv[2];
   await sleep(800);
@@ -556,6 +670,23 @@ async function main() {
         const E = LP.labEngine;
         E.reset();
         E.open(${JSON.stringify(NET_LAB)});
+        for (const cmd of ${JSON.stringify(c.cmds)}) E.exec(cmd);
+        ${c.score !== undefined ? 'return E.check().score;' : c.probe}
+      })()`);
+      const want = c.score !== undefined ? c.score : c.want;
+      const ok = got === want;
+      if (!ok) bad++;
+      console.log(`${ok ? 'ok  ' : 'FAIL'}  ${c.name.padEnd(30)} ${String(got)}  期望 ${String(want)}`);
+    }
+  }
+
+  if (!only || only === 'pkg') {
+    console.log('\n== 软件包（' + PKG_LAB + '）');
+    for (const c of PKG_CASES) {
+      const got = await evalJs(`(() => {
+        const E = LP.labEngine;
+        E.reset();
+        E.open(${JSON.stringify(PKG_LAB)});
         for (const cmd of ${JSON.stringify(c.cmds)}) E.exec(cmd);
         ${c.score !== undefined ? 'return E.check().score;' : c.probe}
       })()`);

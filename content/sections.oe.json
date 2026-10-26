@@ -271,7 +271,7 @@
       "以为 `/etc/fstab` 是包管理配置"
     ],
     "question_ids": ["OE-11", "OE-12"],
-    "lab_ids": [],
+    "lab_ids": ["oe-lab-pkg-01"],
     "search_terms": ["rpm -qf 查询包", "dnf 配置仓库"],
     "gaps": "视频以 Rocky 演示，openEuler 仓库文件名与默认软件源需对照官方文档。"
   },

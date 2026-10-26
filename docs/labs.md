@@ -20,6 +20,7 @@
 | `kp-lab-scan-01` | 迁移依赖审查：给 6 个组件定处理方式 | 鲲鹏应用开发 | 证据审查 | L1 引导模拟 | 6 | 80 |
 | `oe-lab-files-01` | 日志留存：硬链接、软链接与归档 | openEuler | 终端 | L2 状态实验 | 5 | 80 |
 | `oe-lab-net-01` | 换静态地址，再确认端口在监听 | openEuler | 终端 | L2 状态实验 | 6 | 80 |
+| `oe-lab-pkg-01` | 装一个包，再把它的文件找回来 | openEuler | 终端 | L2 状态实验 | 5 | 80 |
 
 ## 协作目录：用户、组与权限（`oe-lab-perm-01`）
 
@@ -380,5 +381,57 @@ nmcli connection up eth0
 systemctl start nginx
 ss -lntp
 ip addr show dev eth0
+```
+
+## 装一个包，再把它的文件找回来（`oe-lab-pkg-01`）
+
+- 类型：终端 · 层级：L2 状态实验 · 建议 15 分钟
+- 适用版本：openEuler 24.03-LTS-SP2
+- 归属：openEuler / oe-03 / oe-03-01 RPM 与 DNF 包管理
+
+**场景**：这台 openEuler 要部署 nginx。装之前先确认仓库是通的；装的时候注意 nginx 不是单包，它依赖 nginx-core，dnf 会把依赖一起装上。装完要能回答两个方向的问题：某个文件属于哪个包（rpm -qf），某个包装了哪些文件（rpm -ql）。另外这台机器上有人之前误装了 httpd-tools，要顺手删掉，但别动 bash 这类基础包。
+
+**这一题要练**
+
+- 说清 rpm 与 dnf 的分工：单包查询 vs 依赖解析与事务
+- 用 dnf install 让依赖自动带进来，而不是手动一个个装
+- 用 rpm -qf 与 rpm -ql 做双向查询（文件→包、包→文件）
+- 知道仓库定义放在 /etc/yum.repos.d/ 下
+
+**任务**
+
+1. 看当前启用了哪些仓库
+2. 装上 nginx，确认依赖也被一起装进来
+3. 查 /etc/nginx/nginx.conf 这个文件属于哪个包
+4. 反过来看那个包装了哪些文件
+5. 删掉误装的 httpd-tools
+6. 用 rpm -qa 确认最终装了什么，bash 不能少
+
+**校验项（合计 100 分）**
+
+| 校验项 | 判据 | 分值 |
+| --- | --- | --- |
+| nginx 已安装 | `packages.installed.nginx` 存在 | 20 |
+| nginx-core 作为依赖被自动装上 | `packages.installed.nginx-core` 存在 | 20 |
+| httpd-tools 已删除 | `packages.installed.httpd-tools` absent None | 20 |
+| bash 仍在（基础包不能被误删） | `packages.installed.bash` 存在 | 15 |
+| nginx.conf 已落盘且归属 nginx-core | `files./etc/nginx/nginx.conf.pkg` == `nginx-core` | 25 |
+
+**提示（可在页面逐条展开）**
+
+- `dnf repolist` 看启用的仓库；仓库文件在 `/etc/yum.repos.d/` 下。
+- `dnf install -y nginx`：dnf 会自己把 nginx-core 这类依赖算进去，这是它和 rpm 装本地包的区别。
+- 文件→包用 `rpm -qf 路径`，包→文件用 `rpm -ql 包名`，方向别搞反。
+- 删包用 `dnf remove httpd-tools`；`rpm -e` 也能删，但不处理依赖关系。
+
+**参考解法（只是一种写法）**
+
+```bash
+dnf repolist
+dnf install -y nginx
+rpm -qf /etc/nginx/nginx.conf
+rpm -ql nginx-core
+dnf remove httpd-tools
+rpm -qa
 ```
 

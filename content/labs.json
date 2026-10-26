@@ -735,5 +735,392 @@
       "mounts": {},
       "fstab": []
     }
+  },
+  {
+    "id": "oe-lab-pkg-01",
+    "kind": "linux",
+    "mode": "state-sim",
+    "level": "L2",
+    "title": "装一个包，再把它的文件找回来",
+    "subtitle": "dnf 解依赖，rpm 查归属",
+    "domain": "oe",
+    "topic_id": "oe-03",
+    "section_id": "oe-03-01",
+    "version": "openEuler 24.03-LTS-SP2",
+    "minutes": 15,
+    "scenario": "这台 openEuler 要部署 nginx。装之前先确认仓库是通的；装的时候注意 nginx 不是单包，它依赖 nginx-core，dnf 会把依赖一起装上。装完要能回答两个方向的问题：某个文件属于哪个包（rpm -qf），某个包装了哪些文件（rpm -ql）。另外这台机器上有人之前误装了 httpd-tools，要顺手删掉，但别动 bash 这类基础包。",
+    "objectives": [
+      "说清 rpm 与 dnf 的分工：单包查询 vs 依赖解析与事务",
+      "用 dnf install 让依赖自动带进来，而不是手动一个个装",
+      "用 rpm -qf 与 rpm -ql 做双向查询（文件→包、包→文件）",
+      "知道仓库定义放在 /etc/yum.repos.d/ 下"
+    ],
+    "tasks": [
+      {
+        "id": "t1",
+        "text": "看当前启用了哪些仓库"
+      },
+      {
+        "id": "t2",
+        "text": "装上 nginx，确认依赖也被一起装进来"
+      },
+      {
+        "id": "t3",
+        "text": "查 /etc/nginx/nginx.conf 这个文件属于哪个包"
+      },
+      {
+        "id": "t4",
+        "text": "反过来看那个包装了哪些文件"
+      },
+      {
+        "id": "t5",
+        "text": "删掉误装的 httpd-tools"
+      },
+      {
+        "id": "t6",
+        "text": "用 rpm -qa 确认最终装了什么，bash 不能少"
+      }
+    ],
+    "validators": [
+      {
+        "id": "v1",
+        "label": "nginx 已安装",
+        "weight": 20,
+        "path": [
+          "packages",
+          "installed",
+          "nginx"
+        ],
+        "op": "exists"
+      },
+      {
+        "id": "v2",
+        "label": "nginx-core 作为依赖被自动装上",
+        "weight": 20,
+        "path": [
+          "packages",
+          "installed",
+          "nginx-core"
+        ],
+        "op": "exists"
+      },
+      {
+        "id": "v3",
+        "label": "httpd-tools 已删除",
+        "weight": 20,
+        "path": [
+          "packages",
+          "installed",
+          "httpd-tools"
+        ],
+        "op": "absent"
+      },
+      {
+        "id": "v4",
+        "label": "bash 仍在（基础包不能被误删）",
+        "weight": 15,
+        "path": [
+          "packages",
+          "installed",
+          "bash"
+        ],
+        "op": "exists"
+      },
+      {
+        "id": "v5",
+        "label": "nginx.conf 已落盘且归属 nginx-core",
+        "weight": 25,
+        "path": [
+          "files",
+          "/etc/nginx/nginx.conf",
+          "pkg"
+        ],
+        "op": "eq",
+        "value": "nginx-core"
+      }
+    ],
+    "hints": [
+      {
+        "text": "`dnf repolist` 看启用的仓库；仓库文件在 `/etc/yum.repos.d/` 下。",
+        "cost": 5
+      },
+      {
+        "text": "`dnf install -y nginx`：dnf 会自己把 nginx-core 这类依赖算进去，这是它和 rpm 装本地包的区别。",
+        "cost": 5
+      },
+      {
+        "text": "文件→包用 `rpm -qf 路径`，包→文件用 `rpm -ql 包名`，方向别搞反。",
+        "cost": 5
+      },
+      {
+        "text": "删包用 `dnf remove httpd-tools`；`rpm -e` 也能删，但不处理依赖关系。",
+        "cost": 5
+      }
+    ],
+    "solution": [
+      "dnf repolist",
+      "dnf install -y nginx",
+      "rpm -qf /etc/nginx/nginx.conf",
+      "rpm -ql nginx-core",
+      "dnf remove httpd-tools",
+      "rpm -qa"
+    ],
+    "initial_state": {
+      "host": "euler01",
+      "user": "root",
+      "cwd": "/root",
+      "umask": "022",
+      "users": {
+        "root": {
+          "uid": 0,
+          "groups": [
+            "root"
+          ],
+          "home": "/root",
+          "shell": "/bin/bash"
+        }
+      },
+      "groups": {
+        "root": {
+          "gid": 0
+        }
+      },
+      "files": {
+        "/": {
+          "type": "dir",
+          "owner": "root",
+          "group": "root",
+          "mode": "755"
+        },
+        "/root": {
+          "type": "dir",
+          "owner": "root",
+          "group": "root",
+          "mode": "550"
+        },
+        "/etc": {
+          "type": "dir",
+          "owner": "root",
+          "group": "root",
+          "mode": "755"
+        },
+        "/etc/fstab": {
+          "type": "file",
+          "owner": "root",
+          "group": "root",
+          "mode": "644",
+          "content": "UUID=1f2a-3c4d / xfs defaults 0 0\n"
+        },
+        "/etc/yum.repos.d": {
+          "type": "dir",
+          "owner": "root",
+          "group": "root",
+          "mode": "755"
+        },
+        "/etc/yum.repos.d/openEuler.repo": {
+          "type": "file",
+          "owner": "root",
+          "group": "root",
+          "mode": "644",
+          "content": "[openEuler-everything]\nname=openEuler 24.03-LTS-SP2 - Everything\nbaseurl=http://repo.openeuler.org/openEuler-24.03-LTS-SP2/everything/$basearch/\nenabled=1\ngpgcheck=1\n"
+        },
+        "/usr": {
+          "type": "dir",
+          "owner": "root",
+          "group": "root",
+          "mode": "755"
+        },
+        "/usr/bin": {
+          "type": "dir",
+          "owner": "root",
+          "group": "root",
+          "mode": "755"
+        },
+        "/usr/sbin": {
+          "type": "dir",
+          "owner": "root",
+          "group": "root",
+          "mode": "755"
+        },
+        "/usr/lib": {
+          "type": "dir",
+          "owner": "root",
+          "group": "root",
+          "mode": "755"
+        },
+        "/usr/lib/systemd": {
+          "type": "dir",
+          "owner": "root",
+          "group": "root",
+          "mode": "755"
+        },
+        "/usr/lib/systemd/system": {
+          "type": "dir",
+          "owner": "root",
+          "group": "root",
+          "mode": "755"
+        },
+        "/usr/bin/bash": {
+          "type": "file",
+          "owner": "root",
+          "group": "root",
+          "mode": "755",
+          "content": "",
+          "pkg": "bash"
+        },
+        "/etc/bashrc": {
+          "type": "file",
+          "owner": "root",
+          "group": "root",
+          "mode": "644",
+          "content": "",
+          "pkg": "bash"
+        },
+        "/usr/bin/ls": {
+          "type": "file",
+          "owner": "root",
+          "group": "root",
+          "mode": "755",
+          "content": "",
+          "pkg": "coreutils"
+        },
+        "/usr/bin/cp": {
+          "type": "file",
+          "owner": "root",
+          "group": "root",
+          "mode": "755",
+          "content": "",
+          "pkg": "coreutils"
+        },
+        "/usr/lib/systemd/systemd": {
+          "type": "file",
+          "owner": "root",
+          "group": "root",
+          "mode": "755",
+          "content": "",
+          "pkg": "systemd"
+        },
+        "/usr/bin/ab": {
+          "type": "file",
+          "owner": "root",
+          "group": "root",
+          "mode": "755",
+          "content": "",
+          "pkg": "httpd-tools"
+        },
+        "/usr/bin/htpasswd": {
+          "type": "file",
+          "owner": "root",
+          "group": "root",
+          "mode": "755",
+          "content": "",
+          "pkg": "httpd-tools"
+        }
+      },
+      "services": {},
+      "firewall": null,
+      "packages": {
+        "repos": [
+          {
+            "id": "openEuler-everything",
+            "name": "openEuler 24.03-LTS-SP2 - Everything",
+            "enabled": true
+          },
+          {
+            "id": "openEuler-EPOL",
+            "name": "openEuler 24.03-LTS-SP2 - EPOL",
+            "enabled": false
+          }
+        ],
+        "installed": {
+          "bash": {
+            "version": "5.1.8-6",
+            "arch": "aarch64",
+            "repo": "@System",
+            "summary": "The GNU Bourne Again shell",
+            "files": [
+              "/usr/bin/bash",
+              "/etc/bashrc"
+            ],
+            "requires": []
+          },
+          "coreutils": {
+            "version": "9.0-1",
+            "arch": "aarch64",
+            "repo": "@System",
+            "summary": "Core utilities",
+            "files": [
+              "/usr/bin/ls",
+              "/usr/bin/cp"
+            ],
+            "requires": []
+          },
+          "systemd": {
+            "version": "253-1",
+            "arch": "aarch64",
+            "repo": "@System",
+            "summary": "System and Service Manager",
+            "files": [
+              "/usr/lib/systemd/systemd"
+            ],
+            "requires": []
+          },
+          "httpd-tools": {
+            "version": "2.4.57-1",
+            "arch": "aarch64",
+            "repo": "@System",
+            "summary": "Tools for use with the Apache HTTP Server",
+            "files": [
+              "/usr/bin/ab",
+              "/usr/bin/htpasswd"
+            ],
+            "requires": []
+          }
+        },
+        "available": {
+          "nginx": {
+            "version": "1.24.0-1",
+            "arch": "aarch64",
+            "repo": "openEuler-everything",
+            "summary": "High performance web server",
+            "requires": [
+              "nginx-core"
+            ],
+            "files": [
+              "/usr/bin/nginx"
+            ]
+          },
+          "nginx-core": {
+            "version": "1.24.0-1",
+            "arch": "aarch64",
+            "repo": "openEuler-everything",
+            "summary": "nginx core runtime",
+            "requires": [],
+            "files": [
+              "/usr/sbin/nginx",
+              "/etc/nginx/nginx.conf",
+              "/usr/lib/systemd/system/nginx.service"
+            ]
+          },
+          "vim-enhanced": {
+            "version": "9.0.2196-1",
+            "arch": "aarch64",
+            "repo": "openEuler-everything",
+            "summary": "A version of the VIM editor",
+            "requires": [],
+            "files": [
+              "/usr/bin/vim"
+            ]
+          }
+        },
+        "history": []
+      },
+      "disks": {},
+      "pvs": {},
+      "vgs": {},
+      "lvs": {},
+      "mounts": {},
+      "fstab": []
+    }
   }
 ]

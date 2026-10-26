@@ -190,6 +190,33 @@
     }
   }
 
+  /* ---------- 软件包：安装要把文件真的落进文件系统 ---------- */
+
+  // 装包时把包里的文件写进 st.files，并打上 pkg 归属，
+  // 这样 rpm -qf 查的是真实状态，而不是再查一遍包元数据
+  function materializePkg(st, name) {
+    const p = (st.packages.installed || {})[name];
+    if (!p) return;
+    (p.files || []).forEach((f) => {
+      mkdirs(st, parentOf(f));
+      const bin = f.indexOf('/usr/bin/') === 0 || f.indexOf('/usr/sbin/') === 0;
+      st.files[f] = {
+        type: 'file',
+        owner: 'root',
+        group: 'root',
+        mode: bin ? '755' : '644',
+        content: '',
+        pkg: name,
+      };
+    });
+  }
+
+  function unmaterializePkg(st, name) {
+    Object.keys(st.files).forEach((f) => {
+      if (st.files[f].pkg === name) delete st.files[f];
+    });
+  }
+
   /* ---------- 文件对象：inode、链接、大小 ---------- */
 
   // inode 按需分配：初始状态里可以显式写 inode，没写的第一次用到时分配一个
@@ -333,6 +360,8 @@
           out.push(dim('  文件    ls [-l] / stat / cat / touch / mkdir -p / rm [-rf] / echo … > 文件'));
           out.push(dim('  权限    chmod / chown / chgrp / umask / getfacl / setfacl'));
           out.push(dim('  账户    groupadd / useradd / usermod -aG / userdel / passwd'));
+          out.push(dim('  软件包  dnf repolist|list|install|remove|history / rpm -qa|-q|-qf|-ql|-qi'));
+          out.push(dim('  计划任务 crontab -l|-r|<文件>'));
           out.push(dim('  服务    systemctl start|stop|enable|disable|status|is-active|is-enabled'));
           out.push(dim('  防火墙  firewall-cmd [--permanent] --add-port / --remove-port / --list-all / --query-port / --reload'));
           out.push(dim('  存储    lsblk / pvcreate / vgcreate / lvcreate / lvextend / mkfs.xfs / mount / findmnt / df / blkid'));
@@ -1001,6 +1030,157 @@
           } else {
             out.push(dim('（已写入 ' + path + '）'));
           }
+          return out;
+        }
+
+        case 'dnf': {
+          const pk = st.packages;
+          if (!pk) return [err('dnf: 这个实验没有软件包状态')];
+          const sub = args.find((a) => !a.startsWith('-')) || '';
+          const names = args.filter((a) => !a.startsWith('-') && a !== sub);
+
+          if (sub === 'repolist') {
+            out.push(ok('repo id                   repo name'));
+            (pk.repos || []).filter((r) => r.enabled).forEach((r) => out.push(ok(r.id.padEnd(25) + ' ' + r.name)));
+            return out;
+          }
+
+          if (sub === 'list') {
+            const what = names[0] || 'installed';
+            out.push(ok(what === 'available' ? 'Available Packages' : 'Installed Packages'));
+            const src = what === 'available' ? pk.available : pk.installed;
+            Object.keys(src).forEach((n) => {
+              const p = src[n];
+              out.push(ok(n + '.' + (p.arch || 'aarch64') + '  ' + p.version + '  ' + (p.repo || '@System')));
+            });
+            return out;
+          }
+
+          if (sub === 'history') {
+            out.push(ok('ID     | Command line             | Action(s)      | Altered'));
+            out.push(ok('-------+--------------------------+----------------+--------'));
+            (pk.history || []).forEach((h) => {
+              out.push(ok(String(h.id).padEnd(6) + ' | ' + h.cmd.padEnd(24) + ' | ' + (h.action || 'Install').padEnd(14) + ' | ' + String(h.pkgs.length).padStart(6)));
+            });
+            if (!(pk.history || []).length) out.push(dim('（还没有事务记录）'));
+            return out;
+          }
+
+          if (sub === 'install' || sub === 'remove') {
+            if (!needRoot()) return out;
+            if (!names.length) return [err('dnf: ' + sub + ' 后面要跟包名')];
+            const isInstall = sub === 'install';
+
+            if (isInstall) {
+              // 依赖要递归展开：装 nginx 会带 nginx-core，这一层是 dnf 与 rpm 的核心差别
+              const plan = [];
+              const missing = [];
+              const walk = (n) => {
+                if (pk.installed[n]) return;
+                const p = pk.available[n];
+                if (!p) { missing.push(n); return; }
+                if (plan.indexOf(n) >= 0) return;
+                plan.push(n);
+                (p.requires || []).forEach(walk);
+              };
+              names.forEach(walk);
+              if (missing.length) return [err('Error: Unable to find a match: ' + missing.join(' '))];
+              if (!plan.length) {
+                out.push(ok('Package ' + names.join(' ') + ' is already installed.'));
+                out.push(ok('Nothing to do. Complete!'));
+                return out;
+              }
+              out.push(dim('Dependencies resolved.'));
+              plan.forEach((n, i) => {
+                const p = pk.available[n];
+                out.push(ok((i === 0 ? 'Installing:            ' : 'Installing dependencies:') + ' ' + n + '-' + p.version + '.' + (p.arch || 'aarch64') + '  (' + (p.repo || 'repo') + ')'));
+              });
+              plan.forEach((n) => {
+                const p = pk.available[n];
+                pk.installed[n] = { version: p.version, arch: p.arch || 'aarch64', repo: p.repo, summary: p.summary || '', files: p.files || [], requires: p.requires || [] };
+                materializePkg(st, n);
+              });
+              pk.history = pk.history || [];
+              pk.history.push({ id: pk.history.length + 1, cmd: 'install ' + names.join(' '), action: 'Install', pkgs: plan.slice() });
+              out.push(ok('Complete!'));
+              return out;
+            }
+
+            const gone = [];
+            const notInstalled = [];
+            names.forEach((n) => {
+              if (!pk.installed[n]) { notInstalled.push(n); return; }
+              gone.push(n);
+            });
+            if (notInstalled.length) return [err('Error: No match for argument: ' + notInstalled.join(' '))];
+            gone.forEach((n) => {
+              unmaterializePkg(st, n);
+              delete pk.installed[n];
+            });
+            pk.history = pk.history || [];
+            pk.history.push({ id: pk.history.length + 1, cmd: 'remove ' + names.join(' '), action: 'Remove', pkgs: gone.slice() });
+            out.push(ok('Removed:'));
+            gone.forEach((n) => out.push(ok('  ' + n)));
+            out.push(ok('Complete!'));
+            return out;
+          }
+
+          return [err('dnf: 本环境支持 repolist / list / install / remove / history')];
+        }
+
+        case 'rpm': {
+          const pk = st.packages;
+          if (!pk) return [err('rpm: 这个实验没有软件包状态')];
+          const flags = args.filter((a) => a.startsWith('-')).join(' ');
+          const names = args.filter((a) => !a.startsWith('-'));
+
+          if (flags.indexOf('qa') >= 0) {
+            Object.keys(pk.installed).forEach((n) => {
+              const p = pk.installed[n];
+              out.push(ok(n + '-' + p.version + '.' + (p.arch || 'aarch64')));
+            });
+            return out;
+          }
+
+          if (flags.indexOf('qf') >= 0) {
+            const target = names[0];
+            if (!target) return [err('rpm: -qf 后面要跟文件路径')];
+            const p = normalize(target, st.cwd);
+            const f = st.files[p];
+            if (!f) return [err('file ' + target + ' is not owned by any package')];
+            if (!f.pkg) return [err('file ' + target + ' is not owned by any package')];
+            const meta = pk.installed[f.pkg] || {};
+            out.push(ok(f.pkg + '-' + (meta.version || '?') + '.' + (meta.arch || 'aarch64')));
+            return out;
+          }
+
+          if (flags.indexOf('ql') >= 0) {
+            const n = names[0];
+            const p = pk.installed[n];
+            if (!p) return [err('package ' + (n || '') + ' is not installed')];
+            (p.files || []).forEach((f) => out.push(ok(f)));
+            return out;
+          }
+
+          if (flags.indexOf('qi') >= 0) {
+            const n = names[0];
+            const p = pk.installed[n];
+            if (!p) return [err('package ' + (n || '') + ' is not installed')];
+            out.push(ok('Name        : ' + n));
+            out.push(ok('Version     : ' + p.version));
+            out.push(ok('Architecture: ' + (p.arch || 'aarch64')));
+            out.push(ok('Install Date: 2026年10月27日 星期二 01时00分00秒'));
+            out.push(ok('Summary     : ' + (p.summary || '')));
+            out.push(ok('Repository  : ' + (p.repo || '@System')));
+            return out;
+          }
+
+          // -q：查某个包装没装
+          const n = names[0];
+          if (!n) return [err('rpm: 用法 rpm -qa / -q 包名 / -qf 文件 / -ql 包名 / -qi 包名')];
+          const p = pk.installed[n];
+          if (!p) return [err('package ' + n + ' is not installed')];
+          out.push(ok(n + '-' + p.version + '.' + (p.arch || 'aarch64')));
           return out;
         }
 
@@ -1829,28 +2009,6 @@
       title: '用户 / 组',
       rows: Object.keys(st.users).map((u) => ({ k: u, v: st.users[u].groups.join(','), cls: '' })),
     });
-    const fileKeys = Object.keys(st.files).filter((p) => p !== '/');
-    groups.push({
-      title: '关键文件',
-      rows: fileKeys.slice(0, 18).map((p) => {
-        const f = st.files[p];
-        // 一行放不下「路径 + 权限 + 属主 + inode + 大小」，所以把链接目标/inode/大小放到副行，
-        // 保证路径不会被挤成省略号——状态面板是判分依据，路径比 inode 更不能省。
-        const bits = [];
-        let sub = '';
-        if (f.type === 'link') {
-          sub = '-> ' + (f.target || '?') + (st.files[f.target] ? '' : '（悬空）');
-        } else if (f.type === 'archive') {
-          sub = '归档 ' + (f.entries || []).length + ' 项';
-        } else if (f.inode !== undefined) {
-          sub = 'inode ' + f.inode;
-        }
-        if (typeof f.size_mb === 'number') bits.push(f.size_mb + ' MiB');
-        if (sub && bits.length) sub += ' · ' + bits.join(' · ');
-        else if (bits.length) sub = bits.join(' · ');
-        return { k: p, v: fmtMode(st, f) + ' ' + f.owner + ':' + f.group, sub, cls: f.type === 'link' && !st.files[f.target] ? 'bad' : '' };
-      }),
-    });
     if (st.network) {
       // 网络这块要同时看两套视图：连接里的配置（持久）与内核里的地址（当前生效）
       const rows = [];
@@ -1873,6 +2031,13 @@
         });
       });
       groups.push({ title: '网络', rows });
+    }
+    if (st.packages) {
+      const rows = Object.keys(st.packages.installed).sort().map((n) => {
+        const p = st.packages.installed[n];
+        return { k: n, v: p.version, sub: (p.files || []).length + ' 个文件 · ' + (p.repo || '@System') };
+      });
+      groups.push({ title: '已装软件包', rows: rows.length ? rows : [{ k: '（无）', v: '', cls: 'bad' }] });
     }
     if (Object.keys(st.services).length) {
       groups.push({
@@ -1904,6 +2069,28 @@
       });
       groups.push({ title: '存储', rows });
     }
+    const fileKeys = Object.keys(st.files).filter((p) => p !== '/');
+    groups.push({
+      title: '关键文件',
+      rows: fileKeys.slice(0, 18).map((p) => {
+        const f = st.files[p];
+        // 一行放不下「路径 + 权限 + 属主 + inode + 大小」，所以把链接目标/inode/大小放到副行，
+        // 保证路径不会被挤成省略号——状态面板是判分依据，路径比 inode 更不能省。
+        const bits = [];
+        let sub = '';
+        if (f.type === 'link') {
+          sub = '-> ' + (f.target || '?') + (st.files[f.target] ? '' : '（悬空）');
+        } else if (f.type === 'archive') {
+          sub = '归档 ' + (f.entries || []).length + ' 项';
+        } else if (f.inode !== undefined) {
+          sub = 'inode ' + f.inode;
+        }
+        if (typeof f.size_mb === 'number') bits.push(f.size_mb + ' MiB');
+        if (sub && bits.length) sub += ' · ' + bits.join(' · ');
+        else if (bits.length) sub = bits.join(' · ');
+        return { k: p, v: fmtMode(st, f) + ' ' + f.owner + ':' + f.group, sub, cls: f.type === 'link' && !st.files[f.target] ? 'bad' : '' };
+      }),
+    });
     return groups;
   };
 
