@@ -66,7 +66,8 @@ def build_resources(catalog, sections):
         "2. 每条资料必须记录**适用版本**与**覆盖/缺口**。技术事实以厂商官方文档为最终依据，视频只作讲解。",
         "3. 抖音、小红书只存链接与摘要，不下载、不转载。",
         "4. 每个小节至少准备一条**备用资料**，主资料失效时能立刻替换。",
-        "5. 改完内容后重新跑 `python tools/build-data.py <题库.md>` 与 `python tools/build-docs.py`。",
+        "5. 改完内容后重新跑 `python tools/build-data.py`（持有源 Markdown 时传路径刷新基础题）、"
+        "`python tools/check-content.py` 与 `python tools/build-docs.py`。",
         "",
         "## 统计",
         "",

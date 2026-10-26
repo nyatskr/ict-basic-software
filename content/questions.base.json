@@ -1,0 +1,2449 @@
+[
+  {
+    "id": "OE-01",
+    "domain": "oe",
+    "kind": "单选",
+    "cluster": "文件、用户与权限",
+    "stem": "执行 `chmod 640 report.txt` 后，权限是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "所有者 rwx、组 r、其他无"
+      },
+      {
+        "id": "B",
+        "text": "所有者 rw、组 r、其他无"
+      },
+      {
+        "id": "C",
+        "text": "所有者 rw、组无、其他 r"
+      },
+      {
+        "id": "D",
+        "text": "所有者 r、组 w、其他无"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explain": "6=`rw-`，4=`r--`，0=`---`。"
+  },
+  {
+    "id": "OE-02",
+    "domain": "oe",
+    "kind": "单选",
+    "cluster": "文件、用户与权限",
+    "stem": "对目录而言，执行权限 `x` 的核心含义是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "列出全部文件名"
+      },
+      {
+        "id": "B",
+        "text": "修改目录本身内容"
+      },
+      {
+        "id": "C",
+        "text": "进入/穿越目录并访问已知名称的条目"
+      },
+      {
+        "id": "D",
+        "text": "删除目录"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explain": "列目录项主要受 `r` 控制，增删目录项通常需要 `w+x`。"
+  },
+  {
+    "id": "OE-03",
+    "domain": "oe",
+    "kind": "单选",
+    "cluster": "文件、用户与权限",
+    "stem": "umask 为 `027` 时，新普通文件以 666 为基准，通常得到：",
+    "options": [
+      {
+        "id": "A",
+        "text": "750"
+      },
+      {
+        "id": "B",
+        "text": "640"
+      },
+      {
+        "id": "C",
+        "text": "650"
+      },
+      {
+        "id": "D",
+        "text": "777"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explain": "`666 & ~027 = 640`；普通文件默认不会因基准而自动带执行位。"
+  },
+  {
+    "id": "OE-04",
+    "domain": "oe",
+    "kind": "单选",
+    "cluster": "文件、用户与权限",
+    "stem": "把用户 alice 追加到 dev 附加组而不丢失原附加组，应使用：",
+    "options": [
+      {
+        "id": "A",
+        "text": "`usermod -G dev alice`"
+      },
+      {
+        "id": "B",
+        "text": "`usermod -aG dev alice`"
+      },
+      {
+        "id": "C",
+        "text": "`groupadd alice dev`"
+      },
+      {
+        "id": "D",
+        "text": "`chgrp dev alice`"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explain": "`-a` 与 `-G` 联用表示追加。"
+  },
+  {
+    "id": "OE-05",
+    "domain": "oe",
+    "kind": "多选",
+    "cluster": "文件、用户与权限",
+    "stem": "要让 dev 组成员在 `/srv/share` 创建的文件默认继承 dev 组，同时避免普通用户删除别人文件，可考虑：",
+    "options": [
+      {
+        "id": "A",
+        "text": "给目录设置 setgid"
+      },
+      {
+        "id": "B",
+        "text": "给目录设置 sticky bit"
+      },
+      {
+        "id": "C",
+        "text": "确保目录组权限允许写入/穿越"
+      },
+      {
+        "id": "D",
+        "text": "把所有文件都改成 777"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "explain": "setgid 继承组，sticky bit 限制删除，组写和执行保证协作；777 不是最小权限。"
+  },
+  {
+    "id": "OE-06",
+    "domain": "oe",
+    "kind": "判断",
+    "cluster": "文件、用户与权限",
+    "stem": "ACL 中即使某指定用户条目含 `rwx`，ACL mask 也可能把其有效权限限制为更少。",
+    "options": [
+      {
+        "id": "A",
+        "text": "正确"
+      },
+      {
+        "id": "B",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explain": "查看 `getfacl` 时要看 `effective` 权限。"
+  },
+  {
+    "id": "OE-07",
+    "domain": "oe",
+    "kind": "单选",
+    "cluster": "文件、用户与权限",
+    "stem": "关于硬链接，正确的是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "保存目标路径文本"
+      },
+      {
+        "id": "B",
+        "text": "可跨文件系统"
+      },
+      {
+        "id": "C",
+        "text": "与原文件共享 inode"
+      },
+      {
+        "id": "D",
+        "text": "原名删除后一定失效"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explain": "软链接保存路径；硬链接是同一 inode 的另一个目录项。"
+  },
+  {
+    "id": "OE-08",
+    "domain": "oe",
+    "kind": "单选",
+    "cluster": "文件、用户与权限",
+    "stem": "查找 `/var/log` 中大于 100 MiB 的普通文件，最合适的是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "`grep -R 100M /var/log`"
+      },
+      {
+        "id": "B",
+        "text": "`find /var/log -type f -size +100M`"
+      },
+      {
+        "id": "C",
+        "text": "`du -100M /var/log`"
+      },
+      {
+        "id": "D",
+        "text": "`ls /var/log --size 100M`"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "OE-09",
+    "domain": "oe",
+    "kind": "单选",
+    "cluster": "文件、用户与权限",
+    "stem": "把目录 `data/` 打成 gzip 压缩包 `data.tar.gz`：",
+    "options": [
+      {
+        "id": "A",
+        "text": "`tar -xzf data.tar.gz data/`"
+      },
+      {
+        "id": "B",
+        "text": "`gzip data/`"
+      },
+      {
+        "id": "C",
+        "text": "`tar -czf data.tar.gz data/`"
+      },
+      {
+        "id": "D",
+        "text": "`tar -tf data/`"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explain": "`c` 创建，`z` gzip，`f` 指定文件。"
+  },
+  {
+    "id": "OE-10",
+    "domain": "oe",
+    "kind": "多选",
+    "cluster": "文件、用户与权限",
+    "stem": "关于 shell 重定向，正确的是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "`>` 默认覆盖文件"
+      },
+      {
+        "id": "B",
+        "text": "`>>` 追加"
+      },
+      {
+        "id": "C",
+        "text": "`2>` 重定向标准错误"
+      },
+      {
+        "id": "D",
+        "text": "`2>&1` 必然把输出写入某个文件"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "explain": "`2>&1` 只是让 stderr 指向当前 stdout，stdout 去哪里取决于其余重定向。"
+  },
+  {
+    "id": "OE-11",
+    "domain": "oe",
+    "kind": "单选",
+    "cluster": "软件、服务、计划任务、进程",
+    "stem": "查询 `/usr/bin/ls` 属于哪个已安装 RPM 包：",
+    "options": [
+      {
+        "id": "A",
+        "text": "`rpm -ql /usr/bin/ls`"
+      },
+      {
+        "id": "B",
+        "text": "`rpm -qf /usr/bin/ls`"
+      },
+      {
+        "id": "C",
+        "text": "`dnf owner ls`"
+      },
+      {
+        "id": "D",
+        "text": "`rpm -qa /usr/bin/ls`"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "OE-12",
+    "domain": "oe",
+    "kind": "多选",
+    "cluster": "软件、服务、计划任务、进程",
+    "stem": "关于 DNF，正确的是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "仓库文件常在 `/etc/yum.repos.d/`"
+      },
+      {
+        "id": "B",
+        "text": "`dnf repolist` 可查看仓库"
+      },
+      {
+        "id": "C",
+        "text": "DNF 能解析依赖"
+      },
+      {
+        "id": "D",
+        "text": "`/etc/fstab` 是 DNF 主配置"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "OE-13",
+    "domain": "oe",
+    "kind": "单选",
+    "cluster": "软件、服务、计划任务、进程",
+    "stem": "希望服务立刻启动，并在以后开机自动启动：",
+    "options": [
+      {
+        "id": "A",
+        "text": "`systemctl start app`"
+      },
+      {
+        "id": "B",
+        "text": "`systemctl enable app`"
+      },
+      {
+        "id": "C",
+        "text": "`systemctl enable --now app`"
+      },
+      {
+        "id": "D",
+        "text": "`systemctl reload app`"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explain": "A 只影响当前状态，B 只建立开机启动关系。"
+  },
+  {
+    "id": "OE-14",
+    "domain": "oe",
+    "kind": "单选",
+    "cluster": "软件、服务、计划任务、进程",
+    "stem": "查看 `app.service` 本次及近期日志，首选：",
+    "options": [
+      {
+        "id": "A",
+        "text": "`dmesg -u app`"
+      },
+      {
+        "id": "B",
+        "text": "`journalctl -u app.service`"
+      },
+      {
+        "id": "C",
+        "text": "`rpm -V app`"
+      },
+      {
+        "id": "D",
+        "text": "`crontab -l app`"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "OE-15",
+    "domain": "oe",
+    "kind": "单选",
+    "cluster": "软件、服务、计划任务、进程",
+    "stem": "周一至周五每天 02:15 执行脚本的 cron 时间字段是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "`2 15 * * 1-5`"
+      },
+      {
+        "id": "B",
+        "text": "`15 2 * * 1-5`"
+      },
+      {
+        "id": "C",
+        "text": "`15 2 1-5 * *`"
+      },
+      {
+        "id": "D",
+        "text": "`* * 2 15 1-5`"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explain": "顺序是分、时、日、月、周。"
+  },
+  {
+    "id": "OE-16",
+    "domain": "oe",
+    "kind": "单选",
+    "cluster": "软件、服务、计划任务、进程",
+    "stem": "希望先让进程有机会清理资源并正常退出，应先发送：",
+    "options": [
+      {
+        "id": "A",
+        "text": "SIGKILL(9)"
+      },
+      {
+        "id": "B",
+        "text": "SIGTERM(15)"
+      },
+      {
+        "id": "C",
+        "text": "SIGSTOP"
+      },
+      {
+        "id": "D",
+        "text": "SIGHUP 一定退出"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "OE-17",
+    "domain": "oe",
+    "kind": "单选",
+    "cluster": "软件、服务、计划任务、进程",
+    "stem": "`ps` 中状态 `Z` 通常表示：",
+    "options": [
+      {
+        "id": "A",
+        "text": "正在运行"
+      },
+      {
+        "id": "B",
+        "text": "不可中断睡眠"
+      },
+      {
+        "id": "C",
+        "text": "僵尸进程"
+      },
+      {
+        "id": "D",
+        "text": "已停止但父进程已正常回收"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explain": "子进程已结束，但退出状态尚未被父进程回收。"
+  },
+  {
+    "id": "OE-18",
+    "domain": "oe",
+    "kind": "多选",
+    "cluster": "软件、服务、计划任务、进程",
+    "stem": "判断 Linux 是否真的内存紧张，应结合：",
+    "options": [
+      {
+        "id": "A",
+        "text": "`available` 内存"
+      },
+      {
+        "id": "B",
+        "text": "swap 活动/缺页"
+      },
+      {
+        "id": "C",
+        "text": "OOM 日志"
+      },
+      {
+        "id": "D",
+        "text": "只看 `free` 一列"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "explain": "page cache 可回收，只看 free 容易误判。"
+  },
+  {
+    "id": "OE-19",
+    "domain": "oe",
+    "kind": "单选",
+    "cluster": "存储、网络与 Shell",
+    "stem": "需要充分利用 4 TiB 单盘，分区表优先选：",
+    "options": [
+      {
+        "id": "A",
+        "text": "MBR"
+      },
+      {
+        "id": "B",
+        "text": "GPT"
+      },
+      {
+        "id": "C",
+        "text": "FAT"
+      },
+      {
+        "id": "D",
+        "text": "inode"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "OE-20",
+    "domain": "oe",
+    "kind": "单选",
+    "cluster": "存储、网络与 Shell",
+    "stem": "LVM 正确顺序是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "VG→PV→LV→文件系统"
+      },
+      {
+        "id": "B",
+        "text": "PV→LV→VG→挂载"
+      },
+      {
+        "id": "C",
+        "text": "PV→VG→LV→文件系统→挂载"
+      },
+      {
+        "id": "D",
+        "text": "文件系统→PV→VG→LV"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "OE-21",
+    "domain": "oe",
+    "kind": "多选",
+    "cluster": "存储、网络与 Shell",
+    "stem": "关于文件系统调整，正确的是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "XFS 通常支持在线扩容"
+      },
+      {
+        "id": "B",
+        "text": "XFS 通常不支持缩容"
+      },
+      {
+        "id": "C",
+        "text": "缩容前必须确认文件系统支持并按正确顺序操作"
+      },
+      {
+        "id": "D",
+        "text": "删除 LV 是安全缩容手段"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "OE-22",
+    "domain": "oe",
+    "kind": "单选",
+    "cluster": "存储、网络与 Shell",
+    "stem": "写完 `/etc/fstab` 后，重启前最合适的初步验证是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "`mount -a`"
+      },
+      {
+        "id": "B",
+        "text": "`mkfs -a`"
+      },
+      {
+        "id": "C",
+        "text": "`reboot -f`"
+      },
+      {
+        "id": "D",
+        "text": "`rm /etc/mtab`"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explain": "再结合 `findmnt`/`df` 检查结果。"
+  },
+  {
+    "id": "OE-23",
+    "domain": "oe",
+    "kind": "单选",
+    "cluster": "存储、网络与 Shell",
+    "stem": "查看 NetworkManager 已配置连接：",
+    "options": [
+      {
+        "id": "A",
+        "text": "`nmcli connection show`"
+      },
+      {
+        "id": "B",
+        "text": "`ip package show`"
+      },
+      {
+        "id": "C",
+        "text": "`route service list`"
+      },
+      {
+        "id": "D",
+        "text": "`systemctl network address`"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "OE-24",
+    "domain": "oe",
+    "kind": "单选",
+    "cluster": "存储、网络与 Shell",
+    "stem": "查看 TCP 监听端口及进程：",
+    "options": [
+      {
+        "id": "A",
+        "text": "`ss -lntp`"
+      },
+      {
+        "id": "B",
+        "text": "`ping -p`"
+      },
+      {
+        "id": "C",
+        "text": "`ip route flush`"
+      },
+      {
+        "id": "D",
+        "text": "`journalctl -p tcp`"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "OE-25",
+    "domain": "oe",
+    "kind": "多选",
+    "cluster": "存储、网络与 Shell",
+    "stem": "要持久放行 8080/TCP 并使其生效，典型步骤包括：",
+    "options": [
+      {
+        "id": "A",
+        "text": "`firewall-cmd --permanent --add-port=8080/tcp`"
+      },
+      {
+        "id": "B",
+        "text": "`firewall-cmd --reload`"
+      },
+      {
+        "id": "C",
+        "text": "用 `--query-port=8080/tcp`/`--list-all` 验证"
+      },
+      {
+        "id": "D",
+        "text": "只关闭 SELinux"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "explain": "防火墙与 SELinux 是不同控制层。"
+  },
+  {
+    "id": "OE-26",
+    "domain": "oe",
+    "kind": "单选",
+    "cluster": "存储、网络与 Shell",
+    "stem": "若 `name=Euler`，哪一项不会展开变量？",
+    "options": [
+      {
+        "id": "A",
+        "text": "`echo \"$name\"`"
+      },
+      {
+        "id": "B",
+        "text": "`echo '$name'`"
+      },
+      {
+        "id": "C",
+        "text": "`printf \"%s\" \"$name\"`"
+      },
+      {
+        "id": "D",
+        "text": "`echo \"${name}\"`"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explain": "单引号保留字面值。"
+  },
+  {
+    "id": "OE-27",
+    "domain": "oe",
+    "kind": "判断",
+    "cluster": "存储、网络与 Shell",
+    "stem": "shell 中 `$?` 是上一条命令的退出状态，通常 0 表示成功。",
+    "options": [
+      {
+        "id": "A",
+        "text": "正确"
+      },
+      {
+        "id": "B",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "OE-28",
+    "domain": "oe",
+    "kind": "单选",
+    "cluster": "iSula 与 Intelligence",
+    "stem": "希望容器删除后数据库文件仍保留，最佳做法是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "只写入容器可写层"
+      },
+      {
+        "id": "B",
+        "text": "使用卷或宿主机绑定挂载"
+      },
+      {
+        "id": "C",
+        "text": "每次停止前截图"
+      },
+      {
+        "id": "D",
+        "text": "只给镜像打标签"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "OE-29",
+    "domain": "oe",
+    "kind": "单选",
+    "cluster": "iSula 与 Intelligence",
+    "stem": "iSula 实验中的 CNI 主要解决：",
+    "options": [
+      {
+        "id": "A",
+        "text": "CPU 指令翻译"
+      },
+      {
+        "id": "B",
+        "text": "容器网络配置与接入"
+      },
+      {
+        "id": "C",
+        "text": "数据库列加密"
+      },
+      {
+        "id": "D",
+        "text": "RPM 签名"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "OE-30",
+    "domain": "oe",
+    "kind": "单选",
+    "cluster": "iSula 与 Intelligence",
+    "stem": "RAG 的典型流程是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "文档检索→直接返回，不使用模型"
+      },
+      {
+        "id": "B",
+        "text": "文档分块/向量化→检索相关上下文→交给模型生成"
+      },
+      {
+        "id": "C",
+        "text": "先永久修改模型权重→再建立文件系统"
+      },
+      {
+        "id": "D",
+        "text": "只安装 K3s 即可完成知识问答"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explain": "RAG 通过检索外部知识增强生成，不等同于微调模型。"
+  },
+  {
+    "id": "OG-01",
+    "domain": "og",
+    "kind": "单选",
+    "cluster": "连接、对象、SQL 与权限",
+    "stem": "用 gsql 连接本机 5432 端口的 appdb，用户为 app，正确命令形态是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "`gsql -d appdb -p 5432 -U app`"
+      },
+      {
+        "id": "B",
+        "text": "`gsql -t appdb -h 5432 -P app`"
+      },
+      {
+        "id": "C",
+        "text": "`gs_om -d appdb -U app`"
+      },
+      {
+        "id": "D",
+        "text": "`gs_dump -login appdb`"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explain": "`-d` 数据库、`-p` 端口、`-U` 用户；认证需要密码且未提供 `-W PASSWORD` 时会交互提示。实际使用不宜把明文密码留在命令历史中。"
+  },
+  {
+    "id": "OG-02",
+    "domain": "og",
+    "kind": "单选",
+    "cluster": "连接、对象、SQL 与权限",
+    "stem": "在 gsql 中列出当前可见表，常用：",
+    "options": [
+      {
+        "id": "A",
+        "text": "`\\dt`"
+      },
+      {
+        "id": "B",
+        "text": "`\\du`"
+      },
+      {
+        "id": "C",
+        "text": "`\\l`"
+      },
+      {
+        "id": "D",
+        "text": "`\\q`"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explain": "`\\du` 看角色，`\\l` 看数据库，`\\q` 退出。"
+  },
+  {
+    "id": "OG-03",
+    "domain": "og",
+    "kind": "判断",
+    "cluster": "连接、对象、SQL 与权限",
+    "stem": "schema 是数据库内的名称空间，不等同于操作系统目录，也不必与用户同名。",
+    "options": [
+      {
+        "id": "A",
+        "text": "正确"
+      },
+      {
+        "id": "B",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "OG-04",
+    "domain": "og",
+    "kind": "多选",
+    "cluster": "连接、对象、SQL 与权限",
+    "stem": "应用账号只需读 app schema 下指定表。符合最小权限原则的做法包括：",
+    "options": [
+      {
+        "id": "A",
+        "text": "授予数据库 CONNECT"
+      },
+      {
+        "id": "B",
+        "text": "授予 schema USAGE"
+      },
+      {
+        "id": "C",
+        "text": "只给目标表 SELECT"
+      },
+      {
+        "id": "D",
+        "text": "直接授予系统管理员权限"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "OG-05",
+    "domain": "og",
+    "kind": "单选",
+    "cluster": "连接、对象、SQL 与权限",
+    "stem": "表空间的主要作用是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "定义 SQL 语法"
+      },
+      {
+        "id": "B",
+        "text": "把数据库对象映射到指定物理存储位置"
+      },
+      {
+        "id": "C",
+        "text": "代替用户认证"
+      },
+      {
+        "id": "D",
+        "text": "自动实现全密态"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "OG-06",
+    "domain": "og",
+    "kind": "多选",
+    "cluster": "连接、对象、SQL 与权限",
+    "stem": "关于约束，正确的是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "主键具有唯一和非空语义"
+      },
+      {
+        "id": "B",
+        "text": "外键维护引用完整性"
+      },
+      {
+        "id": "C",
+        "text": "CHECK 可限制列值条件"
+      },
+      {
+        "id": "D",
+        "text": "索引与约束永远完全等价"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "explain": "约束表达数据规则，某些约束会借助索引实现，但概念不等价。"
+  },
+  {
+    "id": "OG-07",
+    "domain": "og",
+    "kind": "单选",
+    "cluster": "连接、对象、SQL 与权限",
+    "stem": "表有 100 行，其中 `phone` 有 20 个 NULL。`COUNT(phone)` 返回：",
+    "options": [
+      {
+        "id": "A",
+        "text": "20"
+      },
+      {
+        "id": "B",
+        "text": "80"
+      },
+      {
+        "id": "C",
+        "text": "100"
+      },
+      {
+        "id": "D",
+        "text": "NULL"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explain": "`COUNT(column)` 忽略 NULL；`COUNT(*)` 会是 100。"
+  },
+  {
+    "id": "OG-08",
+    "domain": "og",
+    "kind": "单选",
+    "cluster": "连接、对象、SQL 与权限",
+    "stem": "对 `GROUP BY department` 后的聚合结果筛选 `COUNT(*) > 5`，应使用：",
+    "options": [
+      {
+        "id": "A",
+        "text": "WHERE"
+      },
+      {
+        "id": "B",
+        "text": "HAVING"
+      },
+      {
+        "id": "C",
+        "text": "ORDER BY"
+      },
+      {
+        "id": "D",
+        "text": "LIMIT"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "OG-09",
+    "domain": "og",
+    "kind": "单选",
+    "cluster": "连接、对象、SQL 与权限",
+    "stem": "希望保留左表全部行，即使右表没有匹配，应使用：",
+    "options": [
+      {
+        "id": "A",
+        "text": "INNER JOIN"
+      },
+      {
+        "id": "B",
+        "text": "LEFT JOIN"
+      },
+      {
+        "id": "C",
+        "text": "CROSS JOIN"
+      },
+      {
+        "id": "D",
+        "text": "NATURAL JOIN 一定"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "OG-10",
+    "domain": "og",
+    "kind": "单选",
+    "cluster": "连接、对象、SQL 与权限",
+    "stem": "想在不合并明细行的前提下，按部门给工资排名，最适合：",
+    "options": [
+      {
+        "id": "A",
+        "text": "窗口函数 `RANK() OVER (...)`"
+      },
+      {
+        "id": "B",
+        "text": "只用 DISTINCT"
+      },
+      {
+        "id": "C",
+        "text": "TRUNCATE"
+      },
+      {
+        "id": "D",
+        "text": "SAVEPOINT"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "OG-11",
+    "domain": "og",
+    "kind": "单选",
+    "cluster": "连接、对象、SQL 与权限",
+    "stem": "序列（sequence）最适合用于：",
+    "options": [
+      {
+        "id": "A",
+        "text": "产生递增/有序标识值"
+      },
+      {
+        "id": "B",
+        "text": "加密列数据"
+      },
+      {
+        "id": "C",
+        "text": "保存执行计划"
+      },
+      {
+        "id": "D",
+        "text": "配置主备复制"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explain": "序列可能因回滚/缓存出现间隙，不应假设绝对连续。"
+  },
+  {
+    "id": "OG-12",
+    "domain": "og",
+    "kind": "单选",
+    "cluster": "事务、并发与锁",
+    "stem": "事务 T1 插入一行并 COMMIT；随后新事务建立保存点后报错并回滚。对已提交的第一行，正确的是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "被新事务回滚"
+      },
+      {
+        "id": "B",
+        "text": "仍然存在"
+      },
+      {
+        "id": "C",
+        "text": "自动变成 NULL"
+      },
+      {
+        "id": "D",
+        "text": "取决于保存点名称"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explain": "COMMIT 已结束原事务。"
+  },
+  {
+    "id": "OG-13",
+    "domain": "og",
+    "kind": "单选",
+    "cluster": "事务、并发与锁",
+    "stem": "openGauss 官方文档给出的默认事务隔离级别是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "READ UNCOMMITTED"
+      },
+      {
+        "id": "B",
+        "text": "READ COMMITTED"
+      },
+      {
+        "id": "C",
+        "text": "REPEATABLE READ"
+      },
+      {
+        "id": "D",
+        "text": "SERIALIZABLE"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "OG-14",
+    "domain": "og",
+    "kind": "多选",
+    "cluster": "事务、并发与锁",
+    "stem": "关于 MVCC，正确的是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "可让读操作看到与快照一致的版本"
+      },
+      {
+        "id": "B",
+        "text": "能减少不必要的读写阻塞"
+      },
+      {
+        "id": "C",
+        "text": "长事务可能阻碍旧版本清理"
+      },
+      {
+        "id": "D",
+        "text": "保证数据库永远不需要锁"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "OG-15",
+    "domain": "og",
+    "kind": "单选",
+    "cluster": "事务、并发与锁",
+    "stem": "业务要读取订单后立即更新，并避免并发事务同时修改同一行，可考虑：",
+    "options": [
+      {
+        "id": "A",
+        "text": "`SELECT ... FOR UPDATE`"
+      },
+      {
+        "id": "B",
+        "text": "`SELECT DISTINCT`"
+      },
+      {
+        "id": "C",
+        "text": "`VACUUM FULL`"
+      },
+      {
+        "id": "D",
+        "text": "`CREATE SEQUENCE`"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "OG-16",
+    "domain": "og",
+    "kind": "单选",
+    "cluster": "事务、并发与锁",
+    "stem": "在事务内撤销保存点 s1 之后的修改，同时保留更早修改：",
+    "options": [
+      {
+        "id": "A",
+        "text": "`COMMIT TO s1`"
+      },
+      {
+        "id": "B",
+        "text": "`ROLLBACK TO SAVEPOINT s1`"
+      },
+      {
+        "id": "C",
+        "text": "`DROP DATABASE s1`"
+      },
+      {
+        "id": "D",
+        "text": "`CHECKPOINT s1`"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "OG-17",
+    "domain": "og",
+    "kind": "多选",
+    "cluster": "事务、并发与锁",
+    "stem": "降低死锁风险的合理措施包括：",
+    "options": [
+      {
+        "id": "A",
+        "text": "各事务按一致顺序访问资源"
+      },
+      {
+        "id": "B",
+        "text": "缩短事务持锁时间"
+      },
+      {
+        "id": "C",
+        "text": "对可重试错误设计重试"
+      },
+      {
+        "id": "D",
+        "text": "无限延长事务以等待"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "OG-18",
+    "domain": "og",
+    "kind": "单选",
+    "cluster": "索引、执行计划与存储",
+    "stem": "组合索引为 `(a,b)`，通常最直接有利的条件是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "仅 `b=2` 一定完全利用"
+      },
+      {
+        "id": "B",
+        "text": "`a=1 AND b=2`"
+      },
+      {
+        "id": "C",
+        "text": "对 `a` 先做无对应表达式索引的复杂函数"
+      },
+      {
+        "id": "D",
+        "text": "与 a、b 无关"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explain": "实际是否使用还受选择性、统计信息和成本估算影响。"
+  },
+  {
+    "id": "OG-19",
+    "domain": "og",
+    "kind": "多选",
+    "cluster": "索引、执行计划与存储",
+    "stem": "关于 `EXPLAIN ANALYZE`，正确的是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "会实际执行语句"
+      },
+      {
+        "id": "B",
+        "text": "可获得实际行数/时间等"
+      },
+      {
+        "id": "C",
+        "text": "对有副作用语句要谨慎"
+      },
+      {
+        "id": "D",
+        "text": "与 `EXPLAIN` 完全相同"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "OG-20",
+    "domain": "og",
+    "kind": "单选",
+    "cluster": "索引、执行计划与存储",
+    "stem": "优化器对行数估算明显失真，表数据刚大幅变化，优先考虑：",
+    "options": [
+      {
+        "id": "A",
+        "text": "`ANALYZE table`"
+      },
+      {
+        "id": "B",
+        "text": "删除所有索引"
+      },
+      {
+        "id": "C",
+        "text": "重装操作系统"
+      },
+      {
+        "id": "D",
+        "text": "永久强制 Hint"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explain": "先更新统计信息再判断。"
+  },
+  {
+    "id": "OG-21",
+    "domain": "og",
+    "kind": "多选",
+    "cluster": "索引、执行计划与存储",
+    "stem": "关于行存与列存，正确的是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "行存通常利于点查和频繁行级更新"
+      },
+      {
+        "id": "B",
+        "text": "列存通常利于大范围扫描聚合"
+      },
+      {
+        "id": "C",
+        "text": "选择应结合工作负载"
+      },
+      {
+        "id": "D",
+        "text": "列存对所有 OLTP 都必然更快"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "OG-22",
+    "domain": "og",
+    "kind": "判断",
+    "cluster": "索引、执行计划与存储",
+    "stem": "Hint 应在 SQL、索引、统计信息和数据分布分析之后谨慎使用，不能替代基础调优。",
+    "options": [
+      {
+        "id": "A",
+        "text": "正确"
+      },
+      {
+        "id": "B",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "OG-23",
+    "domain": "og",
+    "kind": "单选",
+    "cluster": "备份、集群、安全与监控",
+    "stem": "`gs_dump` 生成自定义格式归档后，通常应使用哪一工具恢复？",
+    "options": [
+      {
+        "id": "A",
+        "text": "`gs_restore`"
+      },
+      {
+        "id": "B",
+        "text": "`journalctl`"
+      },
+      {
+        "id": "C",
+        "text": "`gs_guc`"
+      },
+      {
+        "id": "D",
+        "text": "`isula`"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explain": "纯 SQL 文本则通常由 gsql 执行。"
+  },
+  {
+    "id": "OG-24",
+    "domain": "og",
+    "kind": "单选",
+    "cluster": "备份、集群、安全与监控",
+    "stem": "需要逻辑导出多个数据库并包含角色等全局对象时，更合适的起点是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "`gs_dumpall`"
+      },
+      {
+        "id": "B",
+        "text": "`find`"
+      },
+      {
+        "id": "C",
+        "text": "`gs_ctl kill`"
+      },
+      {
+        "id": "D",
+        "text": "`EXPLAIN`"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explain": "仍需依据选项核对具体范围。"
+  },
+  {
+    "id": "OG-25",
+    "domain": "og",
+    "kind": "多选",
+    "cluster": "备份、集群、安全与监控",
+    "stem": "工具与职责匹配正确的是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "`gs_om`—集群级运维"
+      },
+      {
+        "id": "B",
+        "text": "`gs_ctl`—实例/节点级控制"
+      },
+      {
+        "id": "C",
+        "text": "`gs_guc`—数据库参数配置/检查"
+      },
+      {
+        "id": "D",
+        "text": "`gsql`—LVM 分区"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "OG-26",
+    "domain": "og",
+    "kind": "单选",
+    "cluster": "备份、集群、安全与监控",
+    "stem": "关于 switchover 与 failover，正确的是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "两者都必然在原主完全不可达时执行"
+      },
+      {
+        "id": "B",
+        "text": "switchover 多为计划切换，failover 多为故障接管"
+      },
+      {
+        "id": "C",
+        "text": "failover 只是修改 SQL 表名"
+      },
+      {
+        "id": "D",
+        "text": "switchover 不涉及角色变化"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "OG-27",
+    "domain": "og",
+    "kind": "单选",
+    "cluster": "备份、集群、安全与监控",
+    "stem": "全密态的正确密钥关系是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "CEK 加密 CMK，CMK 加密所有日志"
+      },
+      {
+        "id": "B",
+        "text": "CMK 用于保护 CEK，CEK 用于加密用户敏感数据"
+      },
+      {
+        "id": "C",
+        "text": "CMK 与 CEK 都是数据库用户口令"
+      },
+      {
+        "id": "D",
+        "text": "全密态不需要客户端参与"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "OG-28",
+    "domain": "og",
+    "kind": "多选",
+    "cluster": "备份、集群、安全与监控",
+    "stem": "关于账本防篡改，正确的是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "通过哈希/历史/全局摘要等提高篡改可发现性"
+      },
+      {
+        "id": "B",
+        "text": "可用一致性检查函数验证账本"
+      },
+      {
+        "id": "C",
+        "text": "它主要解决完整性与可追溯问题"
+      },
+      {
+        "id": "D",
+        "text": "它与数据保密加密完全等价"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "OG-29",
+    "domain": "og",
+    "kind": "多选",
+    "cluster": "备份、集群、安全与监控",
+    "stem": "排查数据库性能异常时，合理观察项包括：",
+    "options": [
+      {
+        "id": "A",
+        "text": "主机 CPU/内存/I/O"
+      },
+      {
+        "id": "B",
+        "text": "会话、锁、长事务"
+      },
+      {
+        "id": "C",
+        "text": "慢 SQL 与执行计划"
+      },
+      {
+        "id": "D",
+        "text": "主备延迟和错误日志"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explain": "DBMind 等工具可辅助指标采集、预测和异常检测。"
+  },
+  {
+    "id": "OG-30",
+    "domain": "og",
+    "kind": "多选",
+    "cluster": "备份、集群、安全与监控",
+    "stem": "远程 gsql 无法连接，但本地服务已启动。应检查：",
+    "options": [
+      {
+        "id": "A",
+        "text": "`listen_addresses` 和端口"
+      },
+      {
+        "id": "B",
+        "text": "`pg_hba.conf`"
+      },
+      {
+        "id": "C",
+        "text": "网络/防火墙"
+      },
+      {
+        "id": "D",
+        "text": "用户、数据库及 CONNECT 权限"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explain": "连接问题应沿网络、监听、认证、授权链路逐层定位。"
+  },
+  {
+    "id": "KP-01",
+    "domain": "kp",
+    "kind": "单选",
+    "cluster": "架构与兼容性",
+    "stem": "在鲲鹏 Linux 上，`uname -m` 最常见的架构输出是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "x86_64"
+      },
+      {
+        "id": "B",
+        "text": "aarch64"
+      },
+      {
+        "id": "C",
+        "text": "i386"
+      },
+      {
+        "id": "D",
+        "text": "wasm32"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "KP-02",
+    "domain": "kp",
+    "kind": "判断",
+    "cluster": "架构与兼容性",
+    "stem": "为 x86_64 编译的 ELF 可执行文件通常不能直接在 AArch64 上原生运行。",
+    "options": [
+      {
+        "id": "A",
+        "text": "正确"
+      },
+      {
+        "id": "B",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explain": "ISA 与 ABI 不同；应获取 AArch64 构建或重新编译。"
+  },
+  {
+    "id": "KP-03",
+    "domain": "kp",
+    "kind": "单选",
+    "cluster": "架构与兼容性",
+    "stem": "Arm 架构通常被归类为：",
+    "options": [
+      {
+        "id": "A",
+        "text": "RISC"
+      },
+      {
+        "id": "B",
+        "text": "仅数据库语言"
+      },
+      {
+        "id": "C",
+        "text": "文件系统"
+      },
+      {
+        "id": "D",
+        "text": "虚拟机字节码"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "KP-04",
+    "domain": "kp",
+    "kind": "多选",
+    "cluster": "架构与兼容性",
+    "stem": "纯 Java JAR 较可能无需改源码直接迁移的前提包括：",
+    "options": [
+      {
+        "id": "A",
+        "text": "使用 AArch64 可用的兼容 JDK"
+      },
+      {
+        "id": "B",
+        "text": "不含 JNI/JNA 本地依赖"
+      },
+      {
+        "id": "C",
+        "text": "第三方依赖支持目标环境"
+      },
+      {
+        "id": "D",
+        "text": "不做任何测试"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "explain": "“较可能”不等于免测。"
+  },
+  {
+    "id": "KP-05",
+    "domain": "kp",
+    "kind": "单选",
+    "cluster": "架构与兼容性",
+    "stem": "Java 应用在 x86 上依赖 `libfoo.so`，迁移时正确的是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "JAR 跨平台，所以 `.so` 可忽略"
+      },
+      {
+        "id": "B",
+        "text": "需要 AArch64 版 `libfoo.so` 及其依赖，并做 JNI 回归"
+      },
+      {
+        "id": "C",
+        "text": "把扩展名改成 `.jar`"
+      },
+      {
+        "id": "D",
+        "text": "只增加 JVM 堆"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "KP-06",
+    "domain": "kp",
+    "kind": "多选",
+    "cluster": "架构与兼容性",
+    "stem": "源码依赖默认 `char` 有符号导致迁移后结果不同，可采取：",
+    "options": [
+      {
+        "id": "A",
+        "text": "显式写 `signed char/unsigned char`"
+      },
+      {
+        "id": "B",
+        "text": "评估 `-fsigned-char`"
+      },
+      {
+        "id": "C",
+        "text": "加入边界值回归测试"
+      },
+      {
+        "id": "D",
+        "text": "用随机类型转换掩盖警告"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "KP-07",
+    "domain": "kp",
+    "kind": "多选",
+    "cluster": "架构与兼容性",
+    "stem": "设计跨架构二进制协议/文件格式时，合理做法是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "使用固定宽度整数类型"
+      },
+      {
+        "id": "B",
+        "text": "显式规定字节序"
+      },
+      {
+        "id": "C",
+        "text": "避免直接写入带填充的结构体内存布局"
+      },
+      {
+        "id": "D",
+        "text": "假设所有平台 `long` 等宽"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "KP-08",
+    "domain": "kp",
+    "kind": "单选",
+    "cluster": "架构与兼容性",
+    "stem": "从 x86 移植无锁并发代码到 Arm，最重要的是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "假设两者内存序完全相同"
+      },
+      {
+        "id": "B",
+        "text": "使用语言标准原子操作/正确内存序并做并发测试"
+      },
+      {
+        "id": "C",
+        "text": "删除所有同步"
+      },
+      {
+        "id": "D",
+        "text": "只改文件扩展名"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "KP-09",
+    "domain": "kp",
+    "kind": "判断",
+    "cluster": "架构与兼容性",
+    "stem": "结构体对齐、未对齐访问和 ABI 差异可能造成正确性或性能问题，迁移时应检查。",
+    "options": [
+      {
+        "id": "A",
+        "text": "正确"
+      },
+      {
+        "id": "B",
+        "text": "错误"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "KP-10",
+    "domain": "kp",
+    "kind": "单选",
+    "cluster": "编译、依赖与容器",
+    "stem": "源码大量使用 x86 SSE intrinsic，迁移到鲲鹏最合理的是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "原样链接 x86 库"
+      },
+      {
+        "id": "B",
+        "text": "改为架构无关实现、NEON/SVE 或让编译器向量化"
+      },
+      {
+        "id": "C",
+        "text": "禁用所有单元测试"
+      },
+      {
+        "id": "D",
+        "text": "把 CPU 名改为 x86"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "KP-11",
+    "domain": "kp",
+    "kind": "多选",
+    "cluster": "编译、依赖与容器",
+    "stem": "DevKit 源码迁移分析可能发现：",
+    "options": [
+      {
+        "id": "A",
+        "text": "架构相关宏/编译选项"
+      },
+      {
+        "id": "B",
+        "text": "builtin 和内联汇编"
+      },
+      {
+        "id": "C",
+        "text": "SSE intrinsic"
+      },
+      {
+        "id": "D",
+        "text": "架构相关依赖"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "KP-12",
+    "domain": "kp",
+    "kind": "单选",
+    "cluster": "编译、依赖与容器",
+    "stem": "`foo-1.0.x86_64.rpm` 在 AArch64 上通常：",
+    "options": [
+      {
+        "id": "A",
+        "text": "可直接安装并原生运行"
+      },
+      {
+        "id": "B",
+        "text": "需要 AArch64 构建；若是 `noarch` 才另论"
+      },
+      {
+        "id": "C",
+        "text": "改文件名即可"
+      },
+      {
+        "id": "D",
+        "text": "只能放进数据库"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "KP-13",
+    "domain": "kp",
+    "kind": "多选",
+    "cluster": "编译、依赖与容器",
+    "stem": "构建 multi-arch 容器镜像时应检查：",
+    "options": [
+      {
+        "id": "A",
+        "text": "每个构建阶段的基础镜像架构"
+      },
+      {
+        "id": "B",
+        "text": "复制进镜像的二进制/Agent"
+      },
+      {
+        "id": "C",
+        "text": "依赖包仓库是否有 AArch64 版本"
+      },
+      {
+        "id": "D",
+        "text": "各架构分别做运行验证"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "KP-14",
+    "domain": "kp",
+    "kind": "多选",
+    "cluster": "编译、依赖与容器",
+    "stem": "检查一个 Linux 二进制的架构和动态依赖，可使用：",
+    "options": [
+      {
+        "id": "A",
+        "text": "`file`"
+      },
+      {
+        "id": "B",
+        "text": "`readelf -h`"
+      },
+      {
+        "id": "C",
+        "text": "`ldd`"
+      },
+      {
+        "id": "D",
+        "text": "`chmod` 单独即可"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "KP-15",
+    "domain": "kp",
+    "kind": "单选",
+    "cluster": "编译、依赖与容器",
+    "stem": "关于 `-march=native`，正确的是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "最适合生成可分发到所有处理器的通用二进制"
+      },
+      {
+        "id": "B",
+        "text": "会针对构建机能力优化，跨不同 CPU 分发前应谨慎"
+      },
+      {
+        "id": "C",
+        "text": "把 x86 二进制自动转成 Java"
+      },
+      {
+        "id": "D",
+        "text": "与 CPU 无关"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "KP-16",
+    "domain": "kp",
+    "kind": "单选",
+    "cluster": "编译、依赖与容器",
+    "stem": "合理的迁移顺序是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "先优化→再盘点→最后测试"
+      },
+      {
+        "id": "B",
+        "text": "盘点→评估→准备环境→迁移/构建→功能测试→基线与调优→回归"
+      },
+      {
+        "id": "C",
+        "text": "只运行一次编译器"
+      },
+      {
+        "id": "D",
+        "text": "先上线→再找依赖"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "KP-17",
+    "domain": "kp",
+    "kind": "单选",
+    "cluster": "DevKit 与性能优化",
+    "stem": "旧资料中的 Porting Advisor 最接近当前 DevKit 哪类能力？",
+    "options": [
+      {
+        "id": "A",
+        "text": "源码/软件迁移分析"
+      },
+      {
+        "id": "B",
+        "text": "数据库列加密"
+      },
+      {
+        "id": "C",
+        "text": "LVM 管理"
+      },
+      {
+        "id": "D",
+        "text": "邮件服务"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explain": "记能力映射比死背旧产品名更重要。"
+  },
+  {
+    "id": "KP-18",
+    "domain": "kp",
+    "kind": "多选",
+    "cluster": "DevKit 与性能优化",
+    "stem": "可靠的性能对比应尽量固定：",
+    "options": [
+      {
+        "id": "A",
+        "text": "数据集和并发"
+      },
+      {
+        "id": "B",
+        "text": "预热与运行时长"
+      },
+      {
+        "id": "C",
+        "text": "软件配置和环境"
+      },
+      {
+        "id": "D",
+        "text": "指标口径，并进行多轮测量"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "KP-19",
+    "domain": "kp",
+    "kind": "单选",
+    "cluster": "DevKit 与性能优化",
+    "stem": "希望采集程序调用栈热点并生成报告，典型组合是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "`perf record -g` 与 `perf report`"
+      },
+      {
+        "id": "B",
+        "text": "`chmod` 与 `chown`"
+      },
+      {
+        "id": "C",
+        "text": "`gs_dump` 与 `gs_restore`"
+      },
+      {
+        "id": "D",
+        "text": "`firewall-cmd` 与 `nmcli`"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "KP-20",
+    "domain": "kp",
+    "kind": "多选",
+    "cluster": "DevKit 与性能优化",
+    "stem": "NUMA 远端访问过多时，可考虑：",
+    "options": [
+      {
+        "id": "A",
+        "text": "观察 `numastat`/DevKit 证据"
+      },
+      {
+        "id": "B",
+        "text": "合理绑核与内存绑定"
+      },
+      {
+        "id": "C",
+        "text": "调整线程和数据布局"
+      },
+      {
+        "id": "D",
+        "text": "不测量就把所有进程绑到一个核"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "KP-21",
+    "domain": "kp",
+    "kind": "单选",
+    "cluster": "DevKit 与性能优化",
+    "stem": "工具职责匹配正确的是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "`taskset`—CPU 亲和性；`numactl`—CPU/NUMA 内存策略"
+      },
+      {
+        "id": "B",
+        "text": "`taskset`—数据库备份；`numactl`—防火墙"
+      },
+      {
+        "id": "C",
+        "text": "两者都只看日志"
+      },
+      {
+        "id": "D",
+        "text": "两者都用于 RPM 签名"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "KP-22",
+    "domain": "kp",
+    "kind": "多选",
+    "cluster": "DevKit 与性能优化",
+    "stem": "工具与观察对象匹配正确的是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "`mpstat`—各 CPU 利用率"
+      },
+      {
+        "id": "B",
+        "text": "`iostat`—块设备 I/O"
+      },
+      {
+        "id": "C",
+        "text": "`pidstat`—进程/线程资源"
+      },
+      {
+        "id": "D",
+        "text": "`ss`—套接字与连接"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "KP-23",
+    "domain": "kp",
+    "kind": "单选",
+    "cluster": "DevKit 与性能优化",
+    "stem": "KAE 更典型的定位是：",
+    "options": [
+      {
+        "id": "A",
+        "text": "利用鲲鹏硬件能力加速部分密码/压缩场景"
+      },
+      {
+        "id": "B",
+        "text": "替代所有 SQL 数据库"
+      },
+      {
+        "id": "C",
+        "text": "创建 Linux 用户"
+      },
+      {
+        "id": "D",
+        "text": "生成 GPT 分区表"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "explain": ""
+  },
+  {
+    "id": "KP-24",
+    "domain": "kp",
+    "kind": "多选",
+    "cluster": "DevKit 与性能优化",
+    "stem": "判断一次“优化”是否有效，应同时关注：",
+    "options": [
+      {
+        "id": "A",
+        "text": "吞吐和平均/P95/P99 时延"
+      },
+      {
+        "id": "B",
+        "text": "错误率与正确性"
+      },
+      {
+        "id": "C",
+        "text": "CPU/内存/I/O 等资源成本"
+      },
+      {
+        "id": "D",
+        "text": "多轮可重复性"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "explain": "只看单次平均耗时不足以证明优化。"
+  }
+]

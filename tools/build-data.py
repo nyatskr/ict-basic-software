@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""构建数据层：把源 Markdown 题库 + content/ 下的手写内容合并成浏览器可直接加载的 JS。
+"""构建数据层：把固化基础题（或可选源 Markdown）与 content/ 内容合并成浏览器可直接加载的 JS。
 
 产物（assets/js/data/）：
     bank.js      window.ICT_BANK     理论题
@@ -7,16 +7,21 @@
     labs.js      window.ICT_LABS     模拟实操
 
 源文件：
-    <markdown>                     第 9 章原创题（84 题）
+    content/questions.base.json    固化的基础题（84 题，可独立构建）
     content/questions.extra.json   本站补充题
     content/explanations.json      源文档缺失的解析
     content/catalog.json           域、专题、资料
     content/sections.*.json        学习小节（按域拆文件）
     content/labs.json              模拟实操
 
+可选输入：
+    <markdown>                     重新解析第 9 章；构建成功后刷新 questions.base.json
+
 用法：
-    python tools/build-data.py <markdown>
-    python tools/build-data.py <markdown> --check   # 只校验不写文件
+    python tools/build-data.py                    # 用固化 JSON 构建
+    python tools/build-data.py --check            # 用固化 JSON 校验
+    python tools/build-data.py <markdown>          # 重新解析、刷新固化 JSON 并构建
+    python tools/build-data.py <markdown> --check  # 只解析和校验，不写文件
 """
 import argparse
 import glob
@@ -26,6 +31,7 @@ import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_QUESTIONS = os.path.join(ROOT, "content", "questions.base.json")
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 from importlib.machinery import SourceFileLoader  # noqa: E402
 
@@ -61,10 +67,38 @@ def load(path):
         return json.load(f)
 
 
-def build(markdown):
+def load_source_questions(markdown=None):
+    """读基础题：给了 Markdown 就重新解析，否则用仓库内固化的快照。"""
+    if markdown:
+        if not os.path.isfile(markdown):
+            raise SystemExit(f"找不到题库 Markdown：{markdown}")
+        with open(markdown, encoding="utf-8") as f:
+            return parse_mod.parse(f.read()), f"Markdown：{markdown}"
+    if not os.path.isfile(BASE_QUESTIONS):
+        raise SystemExit(
+            "缺少 content/questions.base.json。"
+            "请从版本库恢复，或运行 python tools/build-data.py <题库.md> 重新生成。"
+        )
+    return load(BASE_QUESTIONS), "content/questions.base.json"
+
+
+def write_json(path, data):
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+        f.write("\n")
+
+
+def reset_messages():
+    errors.clear()
+    warnings.clear()
+    notes.clear()
+
+
+def build(markdown=None, raw_questions=None):
+    reset_messages()
     catalog = load(os.path.join(ROOT, "content", "catalog.json"))
     explanations = load(os.path.join(ROOT, "content", "explanations.json"))
-    extra = load(os.path.join(ROOT, "content", "questions.extra.json"))
+    extra = [dict(q) for q in load(os.path.join(ROOT, "content", "questions.extra.json"))]
     labs = load(os.path.join(ROOT, "content", "labs.json"))
 
     sections = []
@@ -82,7 +116,9 @@ def build(markdown):
             err(f"专题 {t['id']} 的域 {t['domain']} 不存在")
 
     # ---------- 题库 ----------
-    raw = parse_mod.parse(open(markdown, encoding="utf-8").read())
+    if raw_questions is None:
+        raw_questions, _ = load_source_questions(markdown)
+    raw = [dict(q) for q in raw_questions]
     for q in raw:
         q["source"] = "prediction"
     for q in extra:
@@ -167,7 +203,7 @@ def build(markdown):
         if not explain:
             explain = (explanations.get(q["id"]) or "").strip()
             if not explain:
-                warn(f"题号 {q['id']} 没有解析")
+                err(f"题号 {q['id']} 没有解析")
         questions.append({
             "id": q["id"],
             "domain": q["domain"],
@@ -226,19 +262,21 @@ def dump(name, var, data):
     path = os.path.join(ROOT, "assets", "js", "data", name)
     body = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     with open(path, "w", encoding="utf-8") as f:
-        f.write(f"/* 由 tools/build-data.py 生成，不要手改。源文件在 content/ 与题库 Markdown。 */\n")
+        f.write("/* 由 tools/build-data.py 生成，不要手改。源文件在 content/，也可从题库 Markdown 刷新基础题。 */\n")
         f.write(f"window.{var}={body};\n")
     return path, len(body)
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("markdown")
+    ap.add_argument("markdown", nargs="?", help="可选：含第 9 章原创题库的 Markdown")
     ap.add_argument("--check", action="store_true")
     args = ap.parse_args()
 
-    bank, catalog, labs = build(args.markdown)
+    raw_questions, source_label = load_source_questions(args.markdown)
+    bank, catalog, labs = build(raw_questions=raw_questions)
 
+    print(f"基础题 {len(raw_questions)} 道（{source_label}）")
     print(f"题目 {len(bank['questions'])} 道")
     print(f"域 {catalog['stats']['domains']} / 专题 {catalog['stats']['topics']} / 小节 {catalog['stats']['sections']} / 资料 {catalog['stats']['resources']} / 实验 {catalog['stats']['labs']}")
 
@@ -262,6 +300,10 @@ def main():
     if args.check:
         print("\n校验通过（未写文件）")
         return 0
+
+    if args.markdown:
+        write_json(BASE_QUESTIONS, raw_questions)
+        print(f"  刷新 {os.path.relpath(BASE_QUESTIONS, ROOT)}")
 
     for name, var, data in (
         ("bank.js", "ICT_BANK", bank),

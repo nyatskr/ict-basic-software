@@ -26,14 +26,20 @@ python -m http.server 8000
 # 然后访问 http://localhost:8000
 ```
 
-数据与内容分开：`content/*.json` 是手写源，`assets/js/data/*.js` 是构建产物。
+数据与内容分开：`content/*.json` 是内容源，`assets/js/data/*.js` 是构建产物。
 
 ```bash
-# 重新生成题库 / 目录 / 实验三个数据文件（需要题库 Markdown）
-python tools/build-data.py "路径/华为ICT大赛_基础软件赛道_历年真题与2026-2027预测.md"
+# 用仓库内固化的 84 道基础题重新生成题库 / 目录 / 实验数据
+python tools/build-data.py
 
 # 只校验不写文件
-python tools/build-data.py "路径/....md" --check
+python tools/build-data.py --check
+
+# 如果持有源 Markdown：重新解析第 9 章、刷新基础题快照并构建
+python tools/build-data.py "路径/华为ICT大赛_基础软件赛道_历年真题与2026-2027预测.md"
+
+# 全量内容校验（题号归属、答案解析、域/cluster、反引号、产物新鲜度）
+python tools/check-content.py
 
 # 重新生成 docs/ 下的资料台账与实验说明
 python tools/build-docs.py
@@ -158,10 +164,12 @@ content/sections.oe.json      学习小节（按域拆文件）
 content/sections.og.json
 content/sections.kp.json
 content/labs.json             模拟实操定义（含 initial_state 与 validators）
+content/questions.base.json   从源 Markdown 固化的 84 道基础题
 content/questions.extra.json  本站补充题
 content/explanations.json     源文档缺失的解析
 tools/parse-questions.py      解析题库 Markdown 第 9 章
-tools/build-data.py           合并 + 校验 + 生成 assets/js/data/*.js
+tools/build-data.py           自包含构建；也可从 Markdown 刷新基础题
+tools/check-content.py        全量内容一致性与富文本风险校验
 tools/build-docs.py           生成 docs/resources.md 与 docs/labs.md
 tools/test-lab.mjs            实验引擎回归测试（headless Chrome 里跑真命令）
 docs/resources.md             资料台账（生成）
@@ -172,9 +180,10 @@ docs/labs.md                  实验说明（生成）
 
 ## 内容怎么改
 
-**改题目 / 加题**：优先改题库 Markdown 第 9 章，重跑 `build-data.py`。
-本站补充题写进 `content/questions.extra.json`，题号用 `XX-X01` 号段，并在某个小节的 `question_ids` 里引用它——
-`build-data.py` 会强制「每道题必须属于且只属于一个小节」，漏挂或重挂都会报错。
+**改题目 / 加题**：仓库默认从 `content/questions.base.json` 读取 84 道基础题，不再依赖仓库外文件。
+如果持有源 Markdown，传给 `build-data.py` 会重新解析第 9 章，并在校验通过后刷新这份固化快照。
+本站补充题只写进 `content/questions.extra.json`，题号用 `XX-X01` 号段，并在某个小节的 `question_ids` 里引用它。
+改完运行 `python tools/check-content.py`；漏挂、重挂、答案越界、解析缺失、域或 cluster 不一致、生成产物过期都会报错。
 
 **改小节**：编辑 `content/sections.oe.json` 等文件。字段含义：
 
@@ -210,6 +219,7 @@ docs/labs.md                  实验说明（生成）
 - openEuler「用户、组与权限」整条线 5 个小节（`oe-02-01`～`oe-02-05`）状态为 `ready`：
   10 道题 + 10 条资料 + 文字补充与版本纠错 + 常见误区 + 1 个 setgid/sticky 实验。
 - 102 道理论题全部有解析、全部归入小节，无重复无遗漏；其中 84 道来自源 Markdown，18 道为本站补充题。
+- 84 道基础题已固化为仓库内 JSON；clone 后无需原 Markdown 即可重新构建和校验。
 - 44 个小节均至少有 2 道理论题，可独立发起小节测验。
 - 5 个模拟实操可完整跑通并判分（实测 100 分满分路径与重置路径）。
 - 资料台账与实验说明由脚本生成，与数据同源。
