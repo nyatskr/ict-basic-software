@@ -54,6 +54,7 @@ python tools/build-docs.py
 node tools/test-lab.mjs          # 全部
 node tools/test-lab.mjs chmod    # 只跑 chmod 符号模式
 node tools/test-lab.mjs lab      # 只跑实验判分
+node tools/test-lab.mjs files    # 只跑文件 / 链接 / 归档用例
 ```
 
 ---
@@ -110,6 +111,7 @@ node tools/test-lab.mjs lab      # 只跑实验判分
 | 实验 | 状态机覆盖 |
 | --- | --- |
 | `oe-lab-perm-01` | 用户 / 组 / 文件 owner:group:mode / ACL 与 mask / setgid、sticky |
+| `oe-lab-files-01` | inode 与硬链接、软链接 target 与悬空、find 的 -type/-name/-size、tar 归档条目与 -C 解包 |
 | `oe-lab-svc-01` | systemctl active+enabled、firewall-cmd 的 runtime 与 permanent 双视图 |
 | `oe-lab-lvm-01` | PV → VG → LV → mkfs → fstab → lvextend -r |
 | `og-lab-grant-01` | 角色、schema、表三层授权（CONNECT / USAGE / SELECT），且不能多给 DELETE |
