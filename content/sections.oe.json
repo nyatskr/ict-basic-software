@@ -417,9 +417,9 @@
         "t": "XFS 只能用 `xfs_growfs` 扩容；需要变小只能备份 → 重建 → 恢复。ext4 支持缩容但要先 `umount`，并且先缩文件系统、再缩 LV。"
       }
     ],
-    "pitfalls": ["以为“扩容缩容都只改 LV 就行”，忽略文件系统层"],
+    "pitfalls": ["以为“扩容缩容都只改 LV 就行”，忽略文件系统层", "写 /etc/fstab 用设备名 /dev/sdb1 而不是 UUID，盘序一变就挂错分区"],
     "question_ids": ["OE-19", "OE-21"],
-    "lab_ids": [],
+    "lab_ids": ["oe-lab-part-01"],
     "search_terms": ["GPT 2TB 分区", "xfs 扩容 缩容"],
     "gaps": "GPT 与 parted 的大盘场景没有专门视频。"
   },

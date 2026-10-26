@@ -22,6 +22,7 @@
 | `oe-lab-net-01` | 换静态地址，再确认端口在监听 | openEuler | 终端 | L2 状态实验 | 6 | 80 |
 | `oe-lab-pkg-01` | 装一个包，再把它的文件找回来 | openEuler | 终端 | L2 状态实验 | 5 | 80 |
 | `oe-lab-cron-01` | 定时备份：两个来源，一处格式差异 | openEuler | 终端 | L2 状态实验 | 6 | 80 |
+| `oe-lab-part-01` | 裸分区：parted 分区、格式化与持久挂载 | openEuler | 终端 | L2 状态实验 | 7 | 80 |
 
 ## 协作目录：用户、组与权限（`oe-lab-perm-01`）
 
@@ -485,5 +486,62 @@ crontab /root/cron.txt
 crontab -l
 echo '*/10 * * * * root /opt/app/clean.sh' > /etc/cron.d/app
 cat /etc/cron.d/app
+```
+
+## 裸分区：parted 分区、格式化与持久挂载（`oe-lab-part-01`）
+
+- 类型：终端 · 层级：L2 状态实验 · 建议 15 分钟
+- 适用版本：openEuler 24.03-LTS-SP2
+- 归属：openEuler / oe-05 / oe-05-01 分区表与文件系统
+
+**场景**：新加了一块 20G 的空盘 /dev/vdb，盘上还没有分区表。要求：用 parted 建 GPT 分区表，划出一个 8G 的分区 /dev/vdb1；格式化成 ext4；挂到 /data；用 blkid 取 UUID 写进 fstab，重启后要自动挂载。
+
+**这一题要练**
+
+- 用 parted mklabel / mkpart 建分区表与分区，理解 MiB/GiB/% 单位
+- 分完区再 mkfs，而不是对整块盘直接格式化
+- 用 blkid 取 UUID 写 fstab，用 mount -a 验证而不是重启赌
+
+**任务**
+
+1. 给 /dev/vdb 建 GPT 分区表
+2. 划出 8G 的分区 /dev/vdb1（建议 1MiB 起点、9GiB 终点）
+3. 把 /dev/vdb1 格式化为 ext4
+4. 建 /data 挂载点，挂上 /dev/vdb1
+5. 用 blkid 取 UUID 写进 fstab，mount -a 后用 findmnt 验证
+
+**校验项（合计 100 分）**
+
+| 校验项 | 判据 | 分值 |
+| --- | --- | --- |
+| /dev/vdb 已是 GPT 分区表 | `disks./dev/vdb.label` == `gpt` | 10 |
+| 分区 /dev/vdb1 已创建 | `parts./dev/vdb1` 存在 | 15 |
+| 分区 ≥ 8G | `parts./dev/vdb1.size_mb` ≥ `8192` | 10 |
+| 分区已格式化为 ext4 | `parts./dev/vdb1.fs` == `ext4` | 15 |
+| /data 已挂载到 /dev/vdb1 | `mounts./data.dev` == `/dev/vdb1` | 20 |
+| fstab 有 /data 的 UUID 条目 | fstab 含 `{'mount': '/data', 'specPrefix': 'UUID='}` | 20 |
+| 挂载类型是 ext4（挂的是分区不是整盘） | `mounts./data.type` == `ext4` | 10 |
+
+**提示（可在页面逐条展开）**
+
+- 顺序：parted mklabel → parted mkpart → mkfs.ext4 → mkdir -p → mount → blkid → fstab → mount -a。
+- `parted /dev/vdb mkpart primary 1MiB 9GiB`：边界支持 MiB、GiB 与 %（如 100%），也接受 GPT 常见写法 `mkpart primary ext4 1MiB 100%`。
+- `blkid /dev/vdb1` 取 UUID；fstab 首字段写 `UUID=xxx`，第二字段写挂载点，第三字段写 ext4。
+- 对整块盘 `mkfs.ext4 /dev/vdb` 会被拒绝——必须先建分区，再对分区格式化。
+
+**参考解法（只是一种写法）**
+
+```bash
+parted /dev/vdb mklabel gpt
+parted /dev/vdb print
+parted /dev/vdb mkpart primary 1MiB 9GiB
+lsblk
+mkfs.ext4 /dev/vdb1
+mkdir -p /data
+blkid /dev/vdb1
+echo "UUID=<上面查到的> /data ext4 defaults 0 0" >> /etc/fstab
+mount -a
+findmnt /data
+df -hT /data
 ```
 

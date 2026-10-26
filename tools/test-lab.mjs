@@ -675,6 +675,149 @@ const CRON_CASES = [
   },
 ];
 
+/* oe-lab-part-01：裸分区。教学点是「先分区再格式化、fstab 用 UUID 而不是设备名」。
+ * 整盘 mkfs 与直接挂整盘都被引擎拒绝；fstab 的 UUID 必须能被 mount -a 解析。
+ */
+const PART_LAB = 'oe-lab-part-01';
+const PART_CASES = [
+  {
+    name: '初始：vdb 无分区表、无分区',
+    cmds: [],
+    probe: `
+      const st = E.cur().st;
+      return (st.disks['/dev/vdb'].label || 'none') + '|'
+        + Object.keys(st.parts || {}).length;`,
+    want: 'none|0',
+  },
+  {
+    name: 'mklabel 后 parted print 显示 gpt',
+    cmds: ['parted /dev/vdb mklabel gpt'],
+    probe: `
+      const out = E.exec('parted /dev/vdb print').filter((o) => !o.cls).map((o) => o.text);
+      return (E.cur().st.disks['/dev/vdb'].label || '') + '|'
+        + (out.some((l) => l.indexOf('gpt') >= 0) ? 'shown' : 'missing');`,
+    want: 'gpt|shown',
+  },
+  {
+    name: '没 mklabel 直接 mkpart 报 unrecognised disk label',
+    cmds: [],
+    probe: `
+      const out = E.exec('parted /dev/vdb mkpart primary 1MiB 9GiB');
+      return out.some((o) => o.cls === 'err' && o.text.indexOf('unrecognised disk label') >= 0) ? 'E' : 'ok';`,
+    want: 'E',
+  },
+  {
+    name: 'mkpart 1MiB 9GiB 划出 8G+ 分区',
+    cmds: ['parted /dev/vdb mklabel gpt', 'parted /dev/vdb mkpart primary 1MiB 9GiB'],
+    probe: `
+      const p = E.cur().st.parts['/dev/vdb1'];
+      return (p ? p.size_mb + '/' + p.disk : '无');`,
+    want: '9215//dev/vdb',
+  },
+  {
+    name: 'GPT 常见写法 mkpart primary ext4 1MiB 100%',
+    cmds: ['parted /dev/vdb mklabel gpt', 'parted /dev/vdb mkpart primary ext4 1MiB 100%'],
+    probe: `
+      const p = E.cur().st.parts['/dev/vdb1'];
+      return (p ? p.size_mb : '无');`,
+    want: 20479,
+  },
+  {
+    name: '重叠分区被拒绝',
+    cmds: ['parted /dev/vdb mklabel gpt', 'parted /dev/vdb mkpart primary 1MiB 9GiB'],
+    probe: `
+      const out = E.exec('parted /dev/vdb mkpart primary 8GiB 10GiB');
+      return out.some((o) => o.cls === 'err' && o.text.indexOf('overlap') >= 0) ? 'E' : 'ok';`,
+    want: 'E',
+  },
+  {
+    name: '有分区后 mklabel 重建被拒绝',
+    cmds: ['parted /dev/vdb mklabel gpt', 'parted /dev/vdb mkpart primary 1MiB 9GiB'],
+    probe: `
+      const out = E.exec('parted /dev/vdb mklabel msdos');
+      return out.some((o) => o.cls === 'err') ? 'E' : 'ok';`,
+    want: 'E',
+  },
+  {
+    name: '整盘带分区表时 mkfs 被拒',
+    cmds: ['parted /dev/vdb mklabel gpt', 'parted /dev/vdb mkpart primary 1MiB 9GiB'],
+    probe: `
+      const out = E.exec('mkfs.ext4 /dev/vdb');
+      return out.some((o) => o.cls === 'err' && o.text.indexOf('partition table') >= 0) ? 'E' : 'ok';`,
+    want: 'E',
+  },
+  {
+    name: 'mkfs 分区后 blkid 能取 UUID',
+    cmds: ['parted /dev/vdb mklabel gpt', 'parted /dev/vdb mkpart primary 1MiB 9GiB', 'mkfs.ext4 /dev/vdb1'],
+    probe: `
+      const rows = E.exec('blkid /dev/vdb1').filter((o) => !o.cls).map((o) => o.text);
+      const p = E.cur().st.parts['/dev/vdb1'];
+      return (p ? p.fs : '无') + '|' + (rows.some((r) => r.indexOf('UUID="') >= 0 && r.indexOf('TYPE="ext4"') >= 0) ? 'uuid' : 'no');`,
+    want: 'ext4|uuid',
+  },
+  {
+    name: '直接 mount 整盘被拒',
+    cmds: ['parted /dev/vdb mklabel gpt', 'parted /dev/vdb mkpart primary 1MiB 9GiB', 'mkfs.ext4 /dev/vdb1', 'mkdir -p /data'],
+    probe: `
+      const out = E.exec('mount /dev/vdb /data');
+      return out.some((o) => o.cls === 'err') ? 'E' : 'ok';`,
+    want: 'E',
+  },
+  {
+    name: 'mount 分区成功，dev 是 /dev/vdb1',
+    cmds: ['parted /dev/vdb mklabel gpt', 'parted /dev/vdb mkpart primary 1MiB 9GiB', 'mkfs.ext4 /dev/vdb1', 'mkdir -p /data', 'mount /dev/vdb1 /data'],
+    probe: `
+      const m = E.cur().st.mounts['/data'];
+      return (m ? m.dev + '/' + m.type : '未挂载');`,
+    want: '/dev/vdb1/ext4',
+  },
+  {
+    name: 'mount -a 按 fstab 的 UUID 挂载',
+    cmds: ['parted /dev/vdb mklabel gpt', 'parted /dev/vdb mkpart primary 1MiB 9GiB', 'mkfs.ext4 /dev/vdb1', 'mkdir -p /data'],
+    probe: `
+      const st = E.cur().st;
+      const uuid = st.parts['/dev/vdb1'].uuid;
+      E.exec('echo "UUID=' + uuid + ' /data ext4 defaults 0 0" >> /etc/fstab');
+      const out = E.exec('mount -a');
+      const m = st.mounts['/data'];
+      return (m ? m.dev + '/' + m.type : '未挂载') + '|'
+        + (out.some((o) => /新增 1/.test(o.text)) ? 'added' : 'no');`,
+    want: '/dev/vdb1/ext4|added',
+  },
+  {
+    name: '满分：建表→分区→mkfs→挂载→UUID 写 fstab→mount -a',
+    cmds: ['parted /dev/vdb mklabel gpt', 'parted /dev/vdb mkpart primary 1MiB 9GiB', 'mkfs.ext4 /dev/vdb1', 'mkdir -p /data'],
+    probe: `
+      const st = E.cur().st;
+      const uuid = st.parts['/dev/vdb1'].uuid;
+      E.exec('mount /dev/vdb1 /data');
+      E.exec('echo "UUID=' + uuid + ' /data ext4 defaults 0 0" >> /etc/fstab');
+      E.exec('mount -a');
+      return E.check().score;`,
+    want: 100,
+  },
+  {
+    name: '分区 + mkfs 但不挂载，扣 50',
+    cmds: ['parted /dev/vdb mklabel gpt', 'parted /dev/vdb mkpart primary 1MiB 9GiB', 'mkfs.ext4 /dev/vdb1'],
+    score: 50, // 只拿到 v1+v2+v3+v4
+  },
+  {
+    name: '挂载了但 fstab 用设备名（没有 UUID），扣 20',
+    cmds: ['parted /dev/vdb mklabel gpt', 'parted /dev/vdb mkpart primary 1MiB 9GiB', 'mkfs.ext4 /dev/vdb1', 'mkdir -p /data', 'mount /dev/vdb1 /data'],
+    score: 80, // v6 fstab UUID 拿不到
+  },
+  {
+    name: '写了 UUID fstab 但没挂载，扣 30',
+    cmds: ['parted /dev/vdb mklabel gpt', 'parted /dev/vdb mkpart primary 1MiB 9GiB', 'mkfs.ext4 /dev/vdb1', 'mkdir -p /data'],
+    probe: `
+      const st = E.cur().st;
+      const uuid = st.parts['/dev/vdb1'].uuid;
+      E.exec('echo "UUID=' + uuid + ' /data ext4 defaults 0 0" >> /etc/fstab');
+      return E.check().score;`,
+    want: 70, // v5 + v7 拿不到
+  },
+];
+
 async function main() {
   const only = process.argv[2];
   await sleep(800);
@@ -798,6 +941,23 @@ async function main() {
         const E = LP.labEngine;
         E.reset();
         E.open(${JSON.stringify(CRON_LAB)});
+        for (const cmd of ${JSON.stringify(c.cmds)}) E.exec(cmd);
+        ${c.score !== undefined ? 'return E.check().score;' : c.probe}
+      })()`);
+      const want = c.score !== undefined ? c.score : c.want;
+      const ok = got === want;
+      if (!ok) bad++;
+      console.log(`${ok ? 'ok  ' : 'FAIL'}  ${c.name.padEnd(30)} ${String(got)}  期望 ${String(want)}`);
+    }
+  }
+
+  if (!only || only === 'part') {
+    console.log('\n== 裸分区（' + PART_LAB + '）');
+    for (const c of PART_CASES) {
+      const got = await evalJs(`(() => {
+        const E = LP.labEngine;
+        E.reset();
+        E.open(${JSON.stringify(PART_LAB)});
         for (const cmd of ${JSON.stringify(c.cmds)}) E.exec(cmd);
         ${c.score !== undefined ? 'return E.check().score;' : c.probe}
       })()`);

@@ -379,6 +379,23 @@
     return mb + 'M';
   }
 
+  /* parted 的容量参数 → MiB；支持 MiB/GiB/% 与裸数字（按 MiB 算） */
+  function partSizeMb(spec, totalMb) {
+    const m = String(spec || '').match(/^(\d+(?:\.\d+)?)\s*(MiB|GiB|%)?$/i);
+    if (!m) return null;
+    const v = parseFloat(m[1]);
+    const u = (m[2] || 'MiB').toUpperCase();
+    if (u === '%') return Math.round((totalMb * v) / 100);
+    if (u === 'GIB') return Math.round(v * 1024);
+    return Math.round(v);
+  }
+
+  /* 模拟分区/逻辑卷的 UUID（8-4-4-4-12） */
+  function randUuid() {
+    const hex = () => Math.floor(Math.random() * 0xffff).toString(16).padStart(4, '0');
+    return hex() + hex() + '-' + hex() + '-' + hex() + '-' + hex() + '-' + hex() + hex() + hex();
+  }
+
   const linux = {
     prompt() {
       const st = cur.st;
@@ -413,7 +430,7 @@
           out.push(dim('  计划任务 crontab -l|-r|<文件>'));
           out.push(dim('  服务    systemctl start|stop|enable|disable|status|is-active|is-enabled'));
           out.push(dim('  防火墙  firewall-cmd [--permanent] --add-port / --remove-port / --list-all / --query-port / --reload'));
-          out.push(dim('  存储    lsblk / pvcreate / vgcreate / lvcreate / lvextend / mkfs.xfs / mount / findmnt / df / blkid'));
+          out.push(dim('  存储    parted / lsblk / pvcreate / vgcreate / lvcreate / lvextend / mkfs.xfs / mkfs.ext4 / mount / findmnt / df / blkid'));
           out.push(dim('  网络    ss -lntp'));
           return out;
 
@@ -1538,6 +1555,64 @@
           return out;
         }
 
+        case 'parted': {
+          if (!needRoot()) return out;
+          const dev = args[0];
+          const sub = args[1];
+          if (!dev || !sub) return [err('parted: 用法 parted <设备> mklabel gpt|msdos / mkpart primary [<文件系统>] <起点> <终点> / print')];
+          const d = st.disks[dev];
+          if (!d) return [err('Error: ' + dev + ': unrecognised disk label（设备不存在或不是块设备）')];
+          if (sub === 'print') {
+            out.push(ok('Model: Virtio Block Device (virtblk)'));
+            out.push(ok('Disk ' + dev + ': ' + d.size + 'B'));
+            out.push(ok('Partition Table: ' + (d.label || 'unknown')));
+            out.push(ok('Number  Start    End      Size     File system  Name     Flags'));
+            const plist = Object.keys(st.parts || {}).filter((p) => st.parts[p].disk === dev);
+            plist.forEach((p, i) => {
+              const pt = st.parts[p];
+              out.push(ok(String(i + 1).padEnd(7) + fmtSize(pt.start_mb).padEnd(8) + fmtSize(pt.end_mb).padEnd(9) + fmtSize(pt.size_mb).padEnd(9) + String(pt.fs || '').padEnd(12) + 'primary  ' + (pt.mount ? pt.mount : '')));
+            });
+            return out;
+          }
+          if (sub === 'mklabel') {
+            const label = args[2];
+            if (label !== 'gpt' && label !== 'msdos') return [err('parted: invalid token: ' + (args[2] || '') + '（支持 gpt / msdos）')];
+            if (Object.keys(st.parts || {}).some((p) => st.parts[p].disk === dev)) return [err('Warning: Partition(s) on ' + dev + ' are being used. 拒绝重建分区表')];
+            d.label = label;
+            out.push(dim('（已把 ' + dev + ' 的分区表类型改为 ' + label + '）'));
+            return out;
+          }
+          if (sub === 'mkpart') {
+            if (!d.label) return [err('Error: ' + dev + ': unrecognised disk label（先 parted ' + dev + ' mklabel gpt|msdos）')];
+            // 兼容两种写法：mkpart primary <起点> <终点> 与 GPT 常见的 mkpart primary <文件系统> <起点> <终点>
+            // 规则：从参数里取前两个能解析成容量的 token 作为起点/终点，其余（primary、ext4 等）当类型/名字跳过
+            const totalMb = sizeToMb(d.size) || 0;
+            const sizes = args.slice(2).filter((a) => partSizeMb(a, 0) !== null);
+            if (sizes.length < 2) return [err('parted: 无法解析分区边界（支持 MiB/GiB/% 与裸数字，例：1MiB、9GiB、100%）')];
+            const startMb = partSizeMb(sizes[0], totalMb);
+            const endMb = partSizeMb(sizes[1], totalMb);
+            if (endMb <= startMb) return [err('parted: 分区终点必须大于起点')];
+            const existing = Object.keys(st.parts || {}).filter((p) => st.parts[p].disk === dev);
+            if (existing.some((p) => !(startMb >= st.parts[p].end_mb || endMb <= st.parts[p].start_mb)))
+              return [err('Error: overlap detected（分区与已有分区重叠）')];
+            const idx = existing.length + 1;
+            const pname = '/dev/' + baseOf(dev) + idx;
+            st.parts[pname] = {
+              disk: dev,
+              start_mb: startMb,
+              end_mb: endMb,
+              size_mb: endMb - startMb,
+              fs: null,
+              uuid: null,
+              mount: null,
+            };
+            out.push(ok('Information: You may need to update /etc/fstab.'));
+            out.push(dim('（已创建分区 ' + pname + '，' + fmtSize(endMb - startMb) + '）'));
+            return out;
+          }
+          return [err('parted: 不认识子命令 ' + sub + '（支持 mklabel / mkpart / print）')];
+        }
+
         case 'lsblk': {
           out.push(ok('NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS'));
           out.push(ok('vda    252:0    0   40G  0 disk'));
@@ -1546,6 +1621,10 @@
             const n = baseOf(d);
             if (n === 'vda') return;
             out.push(ok(n.padEnd(6) + ' 252:16   0 ' + String(st.disks[d].size).padStart(4) + '  0 disk'));
+          });
+          Object.keys(st.parts || {}).forEach((p) => {
+            const pt = st.parts[p];
+            out.push(ok('  └─' + baseOf(p).padEnd(8) + ' 252:17   0 ' + String(fmtSize(pt.size_mb)).padStart(4) + '  0 part' + (pt.mount ? '  ' + pt.mount : '')));
           });
           Object.keys(st.lvs).forEach((k) => {
             const lv = st.lvs[k];
@@ -1629,6 +1708,14 @@
           const key = lvDev(dev);
           const lv = st.lvs[key];
           const fs = cmd === 'mkfs.xfs' ? 'xfs' : 'ext4';
+          const pt = st.parts && st.parts[dev];
+          if (pt) {
+            if (pt.fs) return [err('mkfs.' + fs + ': ' + dev + ' contains a ' + pt.fs + ' filesystem（已格式化，重来需先删分区）')];
+            pt.fs = fs;
+            pt.uuid = pt.uuid || randUuid();
+            out.push(ok('（' + dev + ' 已格式化为 ' + fs + '，UUID=' + pt.uuid + '）'));
+            return out;
+          }
           if (lv) {
             lv.fs = fs;
             out.push(ok('meta-data=' + key + '        isize=512    agcount=4, agsize=' + (lv.size_mb * 2) + ' blks'));
@@ -1637,6 +1724,7 @@
             return out;
           }
           if (st.disks[dev]) {
+            if (st.disks[dev].label) return [err('mkfs.' + fs + ': ' + dev + ' contains a partition table（先 parted mkpart 建分区，再对 /dev/' + baseOf(dev) + '1 格式化）')];
             st.disks[dev].fs = fs;
             out.push(ok('（' + dev + ' 已格式化为 ' + fs + '）'));
             return out;
@@ -1651,19 +1739,25 @@
             (st.fstab || []).forEach((e) => {
               if (e.mount === '/' || st.mounts[e.mount]) return;
               let dev = e.spec;
+              let key = null;
               if (dev.startsWith('UUID=')) {
                 const uuid = dev.slice(5);
-                const hit = Object.keys(st.lvs).find((k) => st.lvs[k].uuid === uuid);
-                if (!hit) return;
-                dev = '/dev/' + hit;
+                const lk = Object.keys(st.lvs).find((k) => st.lvs[k].uuid === uuid);
+                if (lk) { key = lk; dev = '/dev/' + lk; }
+                else {
+                  // parts 的 key 自带 /dev/ 前缀，不能像 lvs 那样再拼一次
+                  const pk = Object.keys(st.parts || {}).find((k) => st.parts[k].uuid === uuid);
+                  if (pk) { key = pk; dev = pk; }
+                }
+                if (!key) return;
               }
               if (!st.files[e.mount]) {
                 out.push(err('mount: ' + e.mount + ': mount point does not exist.'));
                 return;
               }
               st.mounts[e.mount] = { dev, type: e.type };
-              const key = lvDev(dev);
-              if (st.lvs[key]) st.lvs[key].mount = e.mount;
+              if (key && st.lvs[key]) st.lvs[key].mount = e.mount;
+              else if (key && st.parts[key]) st.parts[key].mount = e.mount;
               n++;
             });
             out.push(dim('（mount -a 完成，新增 ' + n + ' 个挂载）'));
@@ -1674,7 +1768,19 @@
           if (!dev || !mp) return [err('mount: 用法 mount <设备> <挂载点>')];
           const key = lvDev(dev);
           const lv = st.lvs[key];
-          if (!lv) return [err('mount: ' + dev + ': can\'t find in /etc/fstab.')];
+          if (!lv) {
+            const pt = st.parts && st.parts[dev];
+            if (pt) {
+              if (!pt.fs) return [err('mount: ' + dev + ': wrong fs type, bad option, bad superblock（先 mkfs）')];
+              const mpath = normalize(mp, st.cwd);
+              if (!st.files[mpath]) return [err('mount: ' + mp + ': mount point does not exist.')];
+              st.mounts[mpath] = { dev: '/dev/' + baseOf(dev), type: pt.fs };
+              pt.mount = mpath;
+              out.push(dim('（已挂载 /dev/' + baseOf(dev) + ' → ' + mpath + '）'));
+              return out;
+            }
+            return [err('mount: ' + dev + ': can\'t find in /etc/fstab.')];
+          }
           if (!lv.fs) return [err('mount: ' + dev + ': wrong fs type, bad option, bad superblock（先 mkfs）')];
           const mpath = normalize(mp, st.cwd);
           if (!st.files[mpath]) return [err('mount: ' + mp + ': mount point does not exist.')];
@@ -1712,7 +1818,8 @@
             const m = st.mounts[mp];
             const key = lvDev(m.dev);
             const lv = st.lvs[key];
-            const size = lv ? fmtSize(lv.size_mb) : '—';
+            const pt = st.parts && st.parts[m.dev];
+            const size = lv ? fmtSize(lv.size_mb) : pt ? fmtSize(pt.size_mb) : '—';
             out.push(ok(m.dev.padEnd(18) + String(m.type).padEnd(9) + size.padStart(4) + '  512M  ' + size + '   1% ' + mp));
           });
           return out;
@@ -1723,11 +1830,23 @@
           if (dev) {
             const key = lvDev(dev);
             const lv = st.lvs[key];
-            if (!lv) return [err('blkid: ' + dev + ': 未找到该设备')];
-            out.push(ok('/dev/' + key + ': UUID="' + lv.uuid + '" TYPE="' + (lv.fs || '') + '"'));
-            return out;
+            if (lv) {
+              out.push(ok('/dev/' + key + ': UUID="' + lv.uuid + '" TYPE="' + (lv.fs || '') + '"'));
+              return out;
+            }
+            const pt = st.parts && st.parts[dev];
+            if (pt) {
+              if (!pt.fs) return [err('blkid: ' + dev + ': 未检测到文件系统（先 mkfs）')];
+              out.push(ok('/dev/' + baseOf(dev) + ': UUID="' + pt.uuid + '" TYPE="' + pt.fs + '"'));
+              return out;
+            }
+            return [err('blkid: ' + dev + ': 未找到该设备')];
           }
           Object.keys(st.lvs).forEach((k) => out.push(ok('/dev/' + k + ': UUID="' + st.lvs[k].uuid + '" TYPE="' + (st.lvs[k].fs || '') + '"')));
+          Object.keys(st.parts || {}).forEach((p) => {
+            const pt = st.parts[p];
+            if (pt.fs) out.push(ok('/dev/' + baseOf(p) + ': UUID="' + pt.uuid + '" TYPE="' + pt.fs + '"'));
+          });
           return out;
         }
 
@@ -2205,8 +2324,20 @@
         ],
       });
     }
-    if (Object.keys(st.pvs).length || Object.keys(st.disks).length) {
+    if (Object.keys(st.pvs).length || Object.keys(st.disks).length || Object.keys(st.parts || {}).length) {
       const rows = [];
+      Object.keys(st.disks).forEach((d) => {
+        const disk = st.disks[d];
+        if (disk.label) rows.push({ k: '磁盘 ' + d, v: '分区表 ' + disk.label + ' · ' + disk.size, cls: 'ok' });
+      });
+      Object.keys(st.parts || {}).forEach((p) => {
+        const pt = st.parts[p];
+        rows.push({
+          k: '分区 ' + p,
+          v: fmtSize(pt.size_mb) + ' ' + (pt.fs || '无 fs') + (pt.mount ? ' → ' + pt.mount : ''),
+          cls: pt.fs ? 'ok' : '',
+        });
+      });
       Object.keys(st.pvs).forEach((d) => rows.push({ k: 'PV ' + d, v: st.pvs[d].vg || '未分配', cls: st.pvs[d].vg ? 'ok' : '' }));
       Object.keys(st.vgs).forEach((g) => rows.push({ k: 'VG ' + g, v: st.vgs[g].pvs.join(','), cls: 'ok' }));
       Object.keys(st.lvs).forEach((k) => rows.push({ k: 'LV ' + k, v: fmtSize(st.lvs[k].size_mb) + ' ' + (st.lvs[k].fs || '无 fs'), cls: st.lvs[k].fs ? 'ok' : '' }));
@@ -2258,6 +2389,7 @@
       lastCheck: null,
     };
     if (lab.kind === 'linux') {
+      cur.st.parts = cur.st.parts || {};
       syncFstab(cur.st);
       cur.log.push(dim('openEuler 24.03-LTS-SP2 模拟终端 · 输入 help 查看可用命令'));
       cur.log.push(dim('提示：这是状态模拟环境，不连接真实系统；判分只看最终状态。'));

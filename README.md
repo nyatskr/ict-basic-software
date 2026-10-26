@@ -58,6 +58,7 @@ node tools/test-lab.mjs files    # 只跑文件 / 链接 / 归档用例
 node tools/test-lab.mjs net      # 只跑网络用例
 node tools/test-lab.mjs pkg      # 只跑软件包用例
 node tools/test-lab.mjs cron     # 只跑计划任务用例
+node tools/test-lab.mjs part     # 只跑分区用例
 ```
 
 ---
@@ -91,10 +92,10 @@ node tools/test-lab.mjs cron     # 只跑计划任务用例
 
 | 域 | 专题 | 小节 | 题 | 实验 |
 | --- | --- | --- | --- | --- |
-| openEuler（OE） | 9 | 19 | 40 | 6 |
+| openEuler（OE） | 9 | 19 | 40 | 7 |
 | openGauss（OG） | 5 | 14 | 34 | 1 |
 | 鲲鹏应用开发（KP） | 3 | 12 | 29 | 1 |
-| 合计 | 16 | 45 | 103 | 9 |
+| 合计 | 16 | 45 | 103 | 10 |
 
 题号体系稳定：`OE-01`～`OE-30`、`OG-01`～`OG-30`、`KP-01`～`KP-24` 来自题库 Markdown 的第 9 章；
 本站补充题用 `OE-X01` 这类带 `X` 的号段，与预测题分开。小节 id 形如 `oe-02-01`，实验 id 形如 `oe-lab-perm-01`。
@@ -118,6 +119,7 @@ node tools/test-lab.mjs cron     # 只跑计划任务用例
 | `oe-lab-net-01` | connection 配置 vs device 状态、内核地址、nmcli modify/up/down、ss 监听端口与进程 |
 | `oe-lab-pkg-01` | 仓库与依赖解析、装包把文件落进文件系统、rpm -qf 反查归属、删包连带删文件 |
 | `oe-lab-cron-01` | crontab 是整份覆盖不是追加、装不进去的语法检查、/etc/cron.d 比用户 crontab 多一个用户字段 |
+| `oe-lab-part-01` | parted 建 GPT 分区表与分区（MiB/GiB/%）、整盘 mkfs 被拒、blkid 取 UUID、fstab 持久挂载 |
 | `oe-lab-svc-01` | systemctl active+enabled、firewall-cmd 的 runtime 与 permanent 双视图 |
 | `oe-lab-lvm-01` | PV → VG → LV → mkfs → fstab → lvextend -r |
 | `og-lab-grant-01` | 角色、schema、表三层授权（CONNECT / USAGE / SELECT），且不能多给 DELETE |
