@@ -463,9 +463,18 @@
     "a-fw-firewalld": {
       "kind": "article", "platform": "aliyun", "title": "Linux firewalld 防火墙使用详解",
       "author": "阿里云开发者社区", "url": "https://developer.aliyun.com/article/1707560",
-      "role": "main", "status": "candidate", "version_note": "firewalld / firewall-cmd",
-      "covers": ["runtime 与 permanent 两套配置", "--runtime-to-permanent", "--reload", "zone 与接口", "--query-port"],
-      "gaps": "无视频演示", "checked_at": "2026-10-26", "note": "正文已读，是本专题信息密度最高的一篇"
+      "role": "main", "status": "verified", "version_note": "firewalld / firewall-cmd",
+      "covers": ["runtime 与 permanent 两套配置及 reload 后的覆盖关系", "--runtime-to-permanent", "zone 概念、默认区域与接口/源地址绑定", "--query-port / --query-service / --list-all-zones", "富规则 rich rule、端口转发、ipset、lockdown、panic"],
+      "gaps": "不讲 SELinux 与防火墙是两层控制（本站补充里补了）；示例里 echo \"net.ipv4.ip_forward=1\" >> /proc/sys/net/ipv4/ip_forward 是错的，该用 sysctl -w；只提 CentOS/RHEL/Fedora，没说 openEuler；无视频演示",
+      "checked_at": "2026-10-27", "note": "已验收（全文通读）：两套配置、reload、runtime-to-permanent、zone、query、富规则、转发均实讲，是本专题信息密度最高的一篇"
+    },
+    "a-fw-tc": {
+      "kind": "article", "platform": "tencent", "title": "CentOS 7 上的 FirewallD 简明指南（腾讯云开发者社区）",
+      "author": "腾讯云开发者社区", "url": "https://cloud.tencent.com/developer/article/2273936",
+      "role": "backup", "status": "candidate", "version_note": "firewalld / zone",
+      "covers": ["九个预定义 zone 的含义", "--get-default-zone / --set-default-zone", "--permanent 加规则再 --reload 生效", "--add-service 与 --add-port 的区别"],
+      "gaps": "只演示用法，没把 runtime 与 permanent 讲成两套独立视图；文末 --list-all 与查询命令被截断；面向 CentOS 7",
+      "checked_at": "2026-10-27", "note": "备用：正文已读，zone 讲得比主资料细，两套配置的概念不如主资料清楚"
     },
     "v-fw-port": {
       "kind": "video", "platform": "bilibili", "title": "Linux 中如何开放防火墙端口？",

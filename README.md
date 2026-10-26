@@ -290,12 +290,13 @@ docs/labs.md                  实验说明（生成）
 - 资料台账与实验说明由脚本生成，与数据同源。
 - 已部署 GitHub Pages，`file://` 直开与线上 https 两种方式都跑过交互验收。
 - openEuler「命令与文件」两节（`oe-01-01`、`oe-01-02`）已真正达到发布门槛：2 条主资料用妙记转写+章节摘要完成内容验收并标 `verified`，`covers`/`gaps` 按实际内容校正，`check-ready.py` 九项全绿。
+- `oe-06-02`（firewalld 的两套配置）同样达标：主资料是阿里云图文，全文通读后标 `verified`，原文里往 `/proc` 追加 `ip_forward` 的写法错误记进了 `gaps`，并补了一条 zone 讲得更细的备用图文。
 - `tools/test-lab.mjs` 覆盖 18 条 chmod 写法 + 4 条实验判分路径 + 19 条文件/链接/归档用例，本地与线上各跑一遍全绿。
 
 待补：
 
-- 其余 38 个小节内容仍是 `draft`（小节骨架在，文字与资料未填）。
-- 40 条资料仍是 `candidate`，需要人工观看后改成 `verified`，并补 `backup` 资料；`oe-01` 两节的 2 条主资料已转 `verified`。
+- 其余 37 个小节内容仍是 `draft`（小节骨架在，文字与资料未填）。
+- 40 条资料仍是 `candidate`，需要人工观看后改成 `verified`，并补 `backup` 资料；`oe-01` 两节与 `oe-06-02` 的 3 条主资料已转 `verified`。
 - openGauss 与鲲鹏两域还没有中文讲解资源（`resources: []`），需要检索与验收。
 - L3 真实沙箱未接入。
 

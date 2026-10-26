@@ -485,14 +485,14 @@
     "id": "oe-06-02",
     "topic_id": "oe-06",
     "title": "firewalld 的两套配置",
-    "status": "draft",
+    "status": "ready",
     "minutes": 10,
     "objectives": [
       "分清 runtime 与 permanent 两套视图",
       "用 --permanent + --reload 持久放行端口",
       "用 --query-port 验证，知道防火墙与 SELinux 是两层"
     ],
-    "resources": ["a-fw-firewalld", "v-fw-port"],
+    "resources": ["a-fw-firewalld", "v-fw-port", "a-fw-tc"],
     "notes": [
       {
         "h": "不加 --permanent 的规则重启就没了",
@@ -510,7 +510,7 @@
     "question_ids": ["OE-25", "OE-X08"],
     "lab_ids": ["oe-lab-svc-01"],
     "search_terms": ["firewall-cmd permanent reload", "firewalld 开放端口"],
-    "gaps": "主资料是阿里云图文（已读正文），视频只演示 --add-port。"
+    "gaps": "主资料是阿里云图文（全文通读），视频只演示 --add-port；主资料不讲 SELinux 分层，这层靠本站补充；示例里往 /proc 追加 ip_forward 的写法是错的。"
   },
   {
     "id": "oe-07-01",

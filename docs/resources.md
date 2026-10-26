@@ -12,8 +12,8 @@
 
 ## 统计
 
-- 资料总数 **42** 条：视频 35 · 图文 7
-- 已人工验收 **2** 条 · 待验收 **40** 条 · 已失效 **0** 条
+- 资料总数 **43** 条：视频 35 · 图文 8
+- 已人工验收 **3** 条 · 待验收 **40** 条 · 已失效 **0** 条
 
 ## 按域查看
 
@@ -45,7 +45,8 @@
 | `v-sto-lvm` | B 站 | Linux 磁盘管理之 PV,VG,LV 的区别，动手练起来 | [打开](https://www.bilibili.com/video/BV1dY4y1z74o/) | 视频 | 主资料 | 待验收 | 三层关系、pvcreate/vgcreate/lvcreate | 未讲扩容与 -r 连带扩文件系统 | lvm2（通用） | 2026-10-26 | oe-05-02 |
 | `v-net-nmcli` | B 站 | 使用 nmcli 命令配置 Linux 网络参数 | [打开](https://www.bilibili.com/video/BV1rmZ3YXETr/) | 视频 | 主资料 | 待验收 | nmcli connection、nmcli device、静态地址 | 16:49 偏长 | NetworkManager / nmcli | 2026-10-26 | oe-06-01 |
 | `v-net-ss` | B 站 | Linux 命令之 netstat、ss | [打开](https://www.bilibili.com/video/BV1ZroEBxEBv/) | 视频 | 主资料 | 待验收 | -lntp 各开关含义、ss 与 netstat 对照 | 未讲 ss 的过滤表达式 | iproute2 ss | 2026-10-26 | oe-06-01 |
-| `a-fw-firewalld` | 阿里云开发者社区 | Linux firewalld 防火墙使用详解 | [打开](https://developer.aliyun.com/article/1707560) | 图文 | 主资料 | 待验收 | runtime 与 permanent 两套配置、--runtime-to-permanent、--reload、zone 与接口、--query-port | 无视频演示 | firewalld / firewall-cmd | 2026-10-26 | oe-06-02 |
+| `a-fw-firewalld` | 阿里云开发者社区 | Linux firewalld 防火墙使用详解 | [打开](https://developer.aliyun.com/article/1707560) | 图文 | 主资料 | 已验收 | runtime 与 permanent 两套配置及 reload 后的覆盖关系、--runtime-to-permanent、zone 概念、默认区域与接口/源地址绑定、--query-port / --query-service / --list-all-zones、富规则 rich rule、端口转发、ipset、lockdown、panic | 不讲 SELinux 与防火墙是两层控制（本站补充里补了）；示例里 echo "net.ipv4.ip_forward=1" >> /proc/sys/net/ipv4/ip_forward 是错的，该用 sysctl -w；只提 CentOS/RHEL/Fedora，没说 openEuler；无视频演示 | firewalld / firewall-cmd | 2026-10-27 | oe-06-02 |
+| `a-fw-tc` | tencent | CentOS 7 上的 FirewallD 简明指南（腾讯云开发者社区） | [打开](https://cloud.tencent.com/developer/article/2273936) | 图文 | 备用 | 待验收 | 九个预定义 zone 的含义、--get-default-zone / --set-default-zone、--permanent 加规则再 --reload 生效、--add-service 与 --add-port 的区别 | 只演示用法，没把 runtime 与 permanent 讲成两套独立视图；文末 --list-all 与查询命令被截断；面向 CentOS 7 | firewalld / zone | 2026-10-27 | oe-06-02 |
 | `v-fw-port` | B 站 | Linux 中如何开放防火墙端口？ | [打开](https://www.bilibili.com/video/BV1JF411E7H8/) | 视频 | 补充 | 待验收 | --add-port 实操 | 是否演示 --permanent + --reload 需人工确认 | firewalld --add-port | 2026-10-26 | oe-06-02 |
 | `v-file-hardlink` | B 站 | linux 中的硬链接和软连接 | [打开](https://www.bilibili.com/video/BV1zK4y1R7jr/) | 视频 | 主资料 | 已验收 | inode 与目录项、硬链接限制、软链接相对路径 | 讲了 ls -l 第二列硬链接数（原缺口注过时）；软链接相对路径只演示失败并建议写绝对路径，未讲按链接所在目录解析的规则；目录硬链接数语义未展开；含 rm -rf 删目录软链接误删源目录的实例 | 通用 | 2026-10-26 | oe-01-01 |
 | `v-file-tar` | B 站 | 10 分钟学会 gzip 和 tar 命令 | [打开](https://www.bilibili.com/video/BV1dQ4y1R7Lg/) | 视频 | 主资料 | 待验收 | tar -czf/-xzf 归档压缩与解压、gzip 单文件压缩/-d/-l/-r | -C 指定目录、-t 只列不解未讲（原 covers 注与实际不符）；未讲 -p 保留权限 | 通用 | 2026-10-26 | oe-01-02 |
