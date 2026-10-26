@@ -3,7 +3,7 @@
     "id": "oe-01-01",
     "topic_id": "oe-01",
     "title": "路径、链接与查找",
-    "status": "draft",
+    "status": "ready",
     "minutes": 18,
     "objectives": [
       "分清绝对路径与相对路径，说清通配符由谁展开、什么时候会出错",
@@ -39,7 +39,7 @@
     "id": "oe-01-02",
     "topic_id": "oe-01",
     "title": "归档与重定向",
-    "status": "draft",
+    "status": "ready",
     "minutes": 15,
     "objectives": [
       "用 tar 打包与解包，知道 -t 只列不解、-C 指定解包目录",

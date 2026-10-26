@@ -477,23 +477,23 @@
     "v-file-hardlink": {
       "kind": "video", "platform": "bilibili", "title": "linux 中的硬链接和软连接",
       "author": "刘贝斯", "url": "https://www.bilibili.com/video/BV1zK4y1R7jr/", "duration": "13:00",
-      "role": "main", "status": "candidate", "version_note": "通用",
-      "covers": ["inode 与目录项", "硬链接限制", "软链接相对路径"], "gaps": "未讲链接数 ls -l 第二列的读法",
-      "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
+      "role": "main", "status": "verified", "version_note": "通用",
+      "covers": ["inode 与目录项", "硬链接限制", "软链接相对路径"], "gaps": "讲了 ls -l 第二列硬链接数（原缺口注过时）；软链接相对路径只演示失败并建议写绝对路径，未讲按链接所在目录解析的规则；目录硬链接数语义未展开；含 rm -rf 删目录软链接误删源目录的实例",
+      "checked_at": "2026-10-26", "note": "已验收（妙记转写+章节摘要）：硬链接共享 inode、限制（不跨文件系统/不针对目录）、ls -l 链接数、软链接失效与删除陷阱均实讲；相对路径只讲失败场景"
     },
     "v-file-tar": {
       "kind": "video", "platform": "bilibili", "title": "10 分钟学会 gzip 和 tar 命令",
       "author": "colin3dmax", "url": "https://www.bilibili.com/video/BV1dQ4y1R7Lg/", "duration": "12:53",
       "role": "main", "status": "candidate", "version_note": "通用",
-      "covers": ["tar -czf/-xzf", "-C 指定目录", "-t 只列不解"], "gaps": "未讲 -p 保留权限",
-      "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
+      "covers": ["tar -czf/-xzf 归档压缩与解压", "gzip 单文件压缩/-d/-l/-r"], "gaps": "-C 指定目录、-t 只列不解未讲（原 covers 注与实际不符）；未讲 -p 保留权限",
+      "checked_at": "2026-10-26", "note": "妙记转写已核对：视频只讲 gzip 与 tar c/z/v/f、x 解压，未覆盖 -C 与 -t，待人工确认后转 verified"
     },
     "v-file-find": {
       "kind": "video", "platform": "bilibili", "title": "每天一个 Linux 命令 - find",
       "author": "Ternurafl", "url": "https://www.bilibili.com/video/BV1nh4y1r7Zq/", "duration": "06:27",
       "role": "main", "status": "candidate", "version_note": "通用",
-      "covers": ["-name 与引号", "-type 组合"], "gaps": "-mtime 取整、-size 单位需看补充图文",
-      "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
+      "covers": ["-name 通配符与 -iname", "-type f/d/l 组合"], "gaps": "未讲 -name 模式的引号问题（原 covers 注与实际不符）；未讲 -size；-mmin/-mtime 只演示 +/- 基本用法，取整规则未细讲",
+      "checked_at": "2026-10-26", "note": "妙记转写已核对：-name/-iname/-type/-mmin/-mtime/-user/-group 均有演示，引号未讲，待人工确认后转 verified"
     },
     "a-file-find": {
       "kind": "article", "platform": "web", "title": "Linux find 命令（-mtime 与 -size 用法）",
@@ -513,9 +513,9 @@
     "v-file-redirect": {
       "kind": "video", "platform": "bilibili", "title": "Shell 其实很简单（11）深入理解 Shell 中的重定向",
       "author": "张仲恩", "url": "https://www.bilibili.com/video/BV1Hm411m7kP/", "duration": "08:06",
-      "role": "main", "status": "candidate", "version_note": "通用",
-      "covers": ["> 与 >>", "2>", "文件描述符"], "gaps": "2>&1 的顺序问题只带过",
-      "checked_at": "2026-10-26", "note": "链接与时长已核对，内容待人工观看确认"
+      "role": "main", "status": "verified", "version_note": "通用",
+      "covers": ["> 与 >>", "2>", "文件描述符"], "gaps": "2>&1 只讲合并用法与「>&1 和 2> 之间不能有空格」，未讲 cmd 2>&1 > out 这类书写顺序陷阱",
+      "checked_at": "2026-10-26", "note": "已验收（妙记转写+章节摘要）：>/>>、2>/2>>、0/1/2 文件描述符全部实讲，另含 2>&1、&>、/dev/null、<<"
     },
     "v-file-2to1": {
       "kind": "video", "platform": "bilibili", "title": "Linux nohup 命令及标准错误重定向语法 2>&1 详解",

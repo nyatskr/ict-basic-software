@@ -13,7 +13,7 @@
 ## 统计
 
 - 资料总数 **42** 条：视频 35 · 图文 7
-- 已人工验收 **0** 条 · 待验收 **42** 条 · 已失效 **0** 条
+- 已人工验收 **2** 条 · 待验收 **40** 条 · 已失效 **0** 条
 
 ## 按域查看
 
@@ -47,12 +47,12 @@
 | `v-net-ss` | B 站 | Linux 命令之 netstat、ss | [打开](https://www.bilibili.com/video/BV1ZroEBxEBv/) | 视频 | 主资料 | 待验收 | -lntp 各开关含义、ss 与 netstat 对照 | 未讲 ss 的过滤表达式 | iproute2 ss | 2026-10-26 | oe-06-01 |
 | `a-fw-firewalld` | 阿里云开发者社区 | Linux firewalld 防火墙使用详解 | [打开](https://developer.aliyun.com/article/1707560) | 图文 | 主资料 | 待验收 | runtime 与 permanent 两套配置、--runtime-to-permanent、--reload、zone 与接口、--query-port | 无视频演示 | firewalld / firewall-cmd | 2026-10-26 | oe-06-02 |
 | `v-fw-port` | B 站 | Linux 中如何开放防火墙端口？ | [打开](https://www.bilibili.com/video/BV1JF411E7H8/) | 视频 | 补充 | 待验收 | --add-port 实操 | 是否演示 --permanent + --reload 需人工确认 | firewalld --add-port | 2026-10-26 | oe-06-02 |
-| `v-file-hardlink` | B 站 | linux 中的硬链接和软连接 | [打开](https://www.bilibili.com/video/BV1zK4y1R7jr/) | 视频 | 主资料 | 待验收 | inode 与目录项、硬链接限制、软链接相对路径 | 未讲链接数 ls -l 第二列的读法 | 通用 | 2026-10-26 | oe-01-01 |
-| `v-file-tar` | B 站 | 10 分钟学会 gzip 和 tar 命令 | [打开](https://www.bilibili.com/video/BV1dQ4y1R7Lg/) | 视频 | 主资料 | 待验收 | tar -czf/-xzf、-C 指定目录、-t 只列不解 | 未讲 -p 保留权限 | 通用 | 2026-10-26 | oe-01-02 |
-| `v-file-find` | B 站 | 每天一个 Linux 命令 - find | [打开](https://www.bilibili.com/video/BV1nh4y1r7Zq/) | 视频 | 主资料 | 待验收 | -name 与引号、-type 组合 | -mtime 取整、-size 单位需看补充图文 | 通用 | 2026-10-26 | oe-01-01 |
+| `v-file-hardlink` | B 站 | linux 中的硬链接和软连接 | [打开](https://www.bilibili.com/video/BV1zK4y1R7jr/) | 视频 | 主资料 | 已验收 | inode 与目录项、硬链接限制、软链接相对路径 | 讲了 ls -l 第二列硬链接数（原缺口注过时）；软链接相对路径只演示失败并建议写绝对路径，未讲按链接所在目录解析的规则；目录硬链接数语义未展开；含 rm -rf 删目录软链接误删源目录的实例 | 通用 | 2026-10-26 | oe-01-01 |
+| `v-file-tar` | B 站 | 10 分钟学会 gzip 和 tar 命令 | [打开](https://www.bilibili.com/video/BV1dQ4y1R7Lg/) | 视频 | 主资料 | 待验收 | tar -czf/-xzf 归档压缩与解压、gzip 单文件压缩/-d/-l/-r | -C 指定目录、-t 只列不解未讲（原 covers 注与实际不符）；未讲 -p 保留权限 | 通用 | 2026-10-26 | oe-01-02 |
+| `v-file-find` | B 站 | 每天一个 Linux 命令 - find | [打开](https://www.bilibili.com/video/BV1nh4y1r7Zq/) | 视频 | 主资料 | 待验收 | -name 通配符与 -iname、-type f/d/l 组合 | 未讲 -name 模式的引号问题（原 covers 注与实际不符）；未讲 -size；-mmin/-mtime 只演示 +/- 基本用法，取整规则未细讲 | 通用 | 2026-10-26 | oe-01-01 |
 | `a-file-find` | 网页 | Linux find 命令（-mtime 与 -size 用法） | [打开](https://www.runoob.com/linux/linux-comm-find.html) | 图文 | 补充 | 待验收 | -size 单位与正负号、-mtime 取整规则 | 中文示例较少 | 通用 | 2026-10-26 | oe-01-01 |
 | `a-file-link-tc` | tencent | 【Linux】软硬连接（腾讯云开发者社区） | [打开](https://cloud.tencent.com/developer/article/2431109) | 图文 | 备用 | 待验收 | 硬链接不分配新 inode、删源文件后硬链接仍可读、引用计数减 1、软链接保存路径，目标删掉就失效 | 不讲 find；「三.软链接」开头一句把软链接写成「通过硬链接」，读到这里别被带偏；没有 ls -l 第二列链接数的读法 | 通用 | 2026-10-26 | oe-01-01 |
-| `v-file-redirect` | B 站 | Shell 其实很简单（11）深入理解 Shell 中的重定向 | [打开](https://www.bilibili.com/video/BV1Hm411m7kP/) | 视频 | 主资料 | 待验收 | > 与 >>、2>、文件描述符 | 2>&1 的顺序问题只带过 | 通用 | 2026-10-26 | oe-01-02 |
+| `v-file-redirect` | B 站 | Shell 其实很简单（11）深入理解 Shell 中的重定向 | [打开](https://www.bilibili.com/video/BV1Hm411m7kP/) | 视频 | 主资料 | 已验收 | > 与 >>、2>、文件描述符 | 2>&1 只讲合并用法与「>&1 和 2> 之间不能有空格」，未讲 cmd 2>&1 > out 这类书写顺序陷阱 | 通用 | 2026-10-26 | oe-01-02 |
 | `v-file-2to1` | B 站 | Linux nohup 命令及标准错误重定向语法 2>&1 详解 | [打开](https://www.bilibili.com/video/BV1hC32zfEDG/) | 视频 | 补充 | 待验收 | 2>&1 的指向语义、与 &> 的区别 | 以 nohup 场景切入 | 通用 | 2026-10-26 | oe-01-02 |
 | `a-redirect-aliyun` | 阿里云开发者社区 | 详解 Linux 重定向 2>&1 与 &> 的含义和正确顺序 | [打开](https://developer.aliyun.com/article/977075) | 图文 | 备用 | 待验收 | 0/1/2 文件描述符、2>&1 为什么必须写在 >log 之后、2>1 会写成名为 1 的文件、&> 与 >log 2>&1 等价 | 只讲输出重定向，不讲输入重定向与管道；示例是 Java 程序，命令本身与发行版无关 | 通用 | 2026-10-26 | oe-01-02 |
 | `v-shell-quote` | B 站 | [5 分钟学 linux] 38-自定义变量的 3 种赋值方法及单引号、双引号、无引号的区别 | [打开](https://www.bilibili.com/video/BV1Ru411C7UN/) | 视频 | 主资料 | 待验收 | 单引号不展开、双引号展开、无引号的分词 | 偏长 | 通用 | 2026-10-26 | oe-07-01 |
