@@ -38,11 +38,6 @@ from importlib.machinery import SourceFileLoader  # noqa: E402
 parse_mod = SourceFileLoader("parse_questions", os.path.join(ROOT, "tools", "parse-questions.py")).load_module()
 
 TYPE_MAP = {"单选": "single", "多选": "multiple", "判断": "judge"}
-VERSION_OF = {
-    "oe": "openEuler 24.03-LTS-SP2",
-    "og": "openGauss 7.0",
-    "kp": "Kunpeng DevKit / AArch64",
-}
 DIFFICULTY_OF = {"single": "基础", "multiple": "进阶", "judge": "基础"}
 
 errors = []
@@ -108,6 +103,15 @@ def build(markdown=None, raw_questions=None):
 
     # ---------- 域 / 专题 ----------
     domain_ids = {d["id"] for d in catalog["domains"]}
+    # 题目版本号只有一个来源：catalog.domains[].question_version。
+    # version 是给人看的短版本（域页标签），question_version 是打在每道题上的完整口径。
+    version_by_domain = {}
+    for d in catalog["domains"]:
+        label = (d.get("question_version") or "").strip()
+        if not label:
+            err(f"域 {d['id']} 缺少 question_version，题目版本号没有来源")
+            continue
+        version_by_domain[d["id"]] = label
     topic_by_id = {}
     for t in catalog["topics"]:
         if t["id"] in topic_by_id:
@@ -217,7 +221,7 @@ def build(markdown=None, raw_questions=None):
             "answer": q["answer"],
             "explain": explain,
             "source": q["source"],
-            "version": VERSION_OF.get(q["domain"], ""),
+            "version": version_by_domain.get(q["domain"], ""),
             "difficulty": DIFFICULTY_OF[qtype],
         })
 

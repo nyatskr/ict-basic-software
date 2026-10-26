@@ -195,6 +195,19 @@ def main():
             error(f"{question.get('id')} 的 cluster 不在 {domain} 基础题章节名中：{question.get('cluster')}")
 
     topics = {topic.get("id"): topic for topic in catalog.get("topics", []) if isinstance(topic, dict)}
+
+    # 题目版本号必须只有一个来源：catalog.domains[].question_version
+    domain_version = {}
+    for domain in catalog.get("domains", []):
+        if not isinstance(domain, dict):
+            error("catalog.domains 中存在非对象条目")
+            continue
+        did = domain.get("id", "<无 id>")
+        label = (domain.get("question_version") or "").strip()
+        if not label:
+            error(f"域 {did} 缺少 question_version，题目版本号没有来源")
+        else:
+            domain_version[did] = label
     section_by_id = {}
     owners = defaultdict(list)
     for section in sections:
@@ -279,6 +292,12 @@ def main():
                 for field in ("topic_id", "section_id", "explain", "version", "difficulty"):
                     if not text(question.get(field)):
                         error(f"生成题目 {question.get('id')} 缺少 {field}")
+                expect = domain_version.get(question.get("domain"))
+                if expect and question.get("version") != expect:
+                    error(
+                        f"题目 {question.get('id')} 的版本 {question.get('version')!r} "
+                        f"与域 {question.get('domain')} 的 question_version {expect!r} 不一致"
+                    )
             expected = (
                 ("bank.js", "ICT_BANK", bank),
                 ("catalog.js", "ICT_CATALOG", built_catalog),

@@ -41,6 +41,9 @@ python tools/build-data.py "路径/华为ICT大赛_基础软件赛道_历年真�
 # 全量内容校验（题号归属、答案解析、域/cluster、反引号、产物新鲜度）
 python tools/check-content.py
 
+# 按 ready 门槛逐节评估（默认只报告；加 --strict 才在 ready 小节不达标时返回 1）
+python tools/check-ready.py
+
 # 核对资料链接：还活着吗、标题/作者/时长有没有漂移（B 站条目需要 yt-dlp）
 python tools/check-resources.py
 
@@ -195,6 +198,7 @@ content/explanations.json     源文档缺失的解析
 tools/parse-questions.py      解析题库 Markdown 第 9 章
 tools/build-data.py           自包含构建；也可从 Markdown 刷新基础题
 tools/check-content.py        全量内容一致性与富文本风险校验
+tools/check-ready.py          按 ready 门槛逐节评估（先报告，不阻断）
 tools/check-resources.py      资料链接存活与元数据漂移核对（需 yt-dlp）
 tools/build-docs.py           生成 docs/resources.md 与 docs/labs.md
 tools/test-lab.mjs            实验引擎回归测试（headless Chrome 里跑真命令）
@@ -234,6 +238,33 @@ docs/labs.md                  实验说明（生成）
 **加实验**：在 `content/labs.json` 追加一条，写 `initial_state` 与 `validators`。
 `validators` 的 `path` 指向状态机里的字段，`op` 支持 `exists` / `eq` / `contains` / `gte` / `grant` / `fstab_has`，
 `weight` 合计必须等于 100，否则构建会报错。
+
+**改版本号**：只有一个地方——`content/catalog.json` 的 `domains[].question_version`。
+改完重跑 `build-data.py`，该域所有题目的 `version` 同步变化，`check-content.py` 会校验两者一致
+（`build-data.py` 里不再有硬编码的版本表）。
+
+`version` 与 `question_version` 是两个用途：前者是域页上给人看的短版本（如 `24.03-LTS-SP2`），
+后者是打在每道题上的完整口径（如 `openEuler 24.03-LTS-SP2`）。
+
+### ready 门槛
+
+`status: "ready"` 表示这一节可以发布，不是「写完了」。`tools/check-ready.py` 按下面这张表逐项判定：
+
+| 项目 | 门槛 |
+| --- | --- |
+| 学习目标 | 2–4 条 |
+| 主资料 | 至少 1 条 `verified + main` |
+| 备用资料 | 至少 1 条 `backup` 且 `checked_at` 非空 |
+| 本站补充 | ≥2 条，且有 `gaps` 说明 |
+| 常见误区 | ≥2 条 |
+| 理论题 | ≥2 道，答案与解析齐全 |
+| 配套实操 | 至少 1 个实验（专属或明确相关） |
+| 实验判分 | 校验项齐全、分值合计 100 |
+| 页面 | 裸反引号 / 控制台错误 / 窄屏溢出（人工确认） |
+
+目前该工具**默认只报告、不阻断**（`--strict` 才返回非 0）：因为现有的 `oe-02` 五个小节虽然标了
+`ready`，但资料全是 `candidate`、也没有 `backup`，按门槛并不达标。等 `oe-02` 补齐后再把
+`--strict` 接进流程。
 
 ---
 
