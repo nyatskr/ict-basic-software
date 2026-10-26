@@ -1300,7 +1300,11 @@
           g.rows
             .map(
               (r) =>
-                '<div class="state-row"><span title="' + esc(r.k) + '">' + esc(r.k) + '</span><b class="' + (r.cls || '') + '">' + esc(r.v) + '</b></div>'
+                '<div class="state-row' + (r.sub ? ' has-sub' : '') + '">' +
+                  '<span title="' + esc(r.k) + '">' + esc(r.k) + '</span>' +
+                  '<b class="' + (r.cls || '') + '">' + esc(r.v) + '</b>' +
+                  (r.sub ? '<em class="' + (r.cls || '') + '">' + esc(r.sub) + '</em>' : '') +
+                '</div>'
             )
             .join('') +
           '</div>'

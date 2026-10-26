@@ -190,6 +190,79 @@
     }
   }
 
+  /* ---------- 文件对象：inode、链接、大小 ---------- */
+
+  // inode 按需分配：初始状态里可以显式写 inode，没写的第一次用到时分配一个
+  function inodeOf(st, path) {
+    const f = st.files[path];
+    if (!f) return undefined;
+    if (f.inode === undefined) {
+      if (st.next_inode === undefined) st.next_inode = 1000;
+      f.inode = st.next_inode++;
+    }
+    return f.inode;
+  }
+
+  // 硬链接的目录项数：同 inode 的条目数（软链接不算）
+  function linkCount(st, path) {
+    const ino = inodeOf(st, path);
+    if (ino === undefined) return 0;
+    return Object.keys(st.files).filter((p) => st.files[p].type !== 'link' && inodeOf(st, p) === ino).length;
+  }
+
+  // 顺着软链接解析到真实路径；返回 {path, dangling}
+  function resolveLink(st, path, depth) {
+    let p = path;
+    let hops = 0;
+    while (st.files[p] && st.files[p].type === 'link') {
+      if (++hops > (depth || 8)) return { path: p, dangling: true };
+      const t = st.files[p].target;
+      if (!t || !st.files[t]) return { path: t || p, dangling: true };
+      p = t;
+    }
+    return { path: p, dangling: !st.files[p] };
+  }
+
+  function fileBytes(f) {
+    if (!f) return 0;
+    if (typeof f.size_mb === 'number') return Math.round(f.size_mb * 1024 * 1024);
+    return String(f.content || '').length;
+  }
+
+  // find -size 的单位换算：c=字节 k=KiB M=MiB G=GiB，默认 512 字节块（简化为字节）
+  function parseSizeExpr(raw) {
+    const m = String(raw).match(/^([+-]?)(\d+)([ckMG]?)$/);
+    if (!m) return null;
+    const mult = { '': 512, c: 1, k: 1024, M: 1024 * 1024, G: 1024 * 1024 * 1024 }[m[3]];
+    return { cmp: m[1] || 'eq', bytes: Number(m[2]) * mult };
+  }
+
+  function sizeMatches(expr, bytes) {
+    if (!expr) return true;
+    if (expr.cmp === '+') return bytes > expr.bytes;
+    if (expr.cmp === '-') return bytes < expr.bytes;
+    // 无符号：find 的实际语义是"向上取整后相等"，这里简化为同一取整单位内相等
+    return Math.ceil(bytes / (expr.bytes || 1)) === 1;
+  }
+
+  // find -name 的通配符转正则（只支持 * ? []）
+  function globToRe(glob) {
+    let s = '';
+    for (const ch of String(glob)) {
+      if (ch === '*') s += '[^/]*';
+      else if (ch === '?') s += '[^/]';
+      else if ('\\^$.|+(){}'.indexOf(ch) >= 0) s += '\\' + ch;
+      else s += ch;
+    }
+    return new RegExp('^' + s + '$');
+  }
+
+  // 收集某路径下所有条目（含自身），用于 find 与 tar
+  function walkPaths(st, root) {
+    const keys = Object.keys(st.files);
+    return keys.filter((p) => p === root || p.indexOf(root === '/' ? '/' : root + '/') === 0).sort();
+  }
+
   function syncFstab(st) {
     const f = st.files['/etc/fstab'];
     if (!f) { st.fstab = []; return; }
@@ -357,16 +430,28 @@
           const path = normalize(args[0], st.cwd);
           const f = st.files[path];
           if (!f) return [err('stat: cannot statx \'' + args[0] + '\': No such file or directory')];
-          out.push(ok('  File: ' + path));
-          out.push(ok('  Size: ' + String((f.content || '').length) + '        Blocks: 8          IO Block: 4096   ' + (f.type === 'dir' ? 'directory' : 'regular file')));
+          const kind = f.type === 'dir' ? 'directory' : f.type === 'link' ? 'symbolic link' : f.type === 'archive' ? 'regular file (archive)' : 'regular file';
+          out.push(ok('  File: ' + path + (f.type === 'link' ? ' -> ' + (f.target || '?') : '')));
+          out.push(ok('  Size: ' + String(fileBytes(f)) + '        Blocks: 8          IO Block: 4096   ' + kind));
+          if (f.inode !== undefined) {
+            out.push(ok('Inode: ' + String(f.inode) + '   Links: ' + String(linkCount(st, path))));
+          }
           out.push(ok('Access: (' + String(modeDigits(f.mode)) + '/' + fmtMode(st, f) + ')  Uid: (' + (st.users[f.owner] ? st.users[f.owner].uid : '?') + '/' + f.owner + ')   Gid: (' + (st.groups[f.group] ? st.groups[f.group].gid : '?') + '/' + f.group + ')'));
           return out;
         }
 
         case 'cat': {
-          const path = normalize(args[0], st.cwd);
+          let path = normalize(args[0], st.cwd);
+          const head = st.files[path];
+          if (!head) return [err('cat: ' + args[0] + ': No such file or directory')];
+          if (head.type === 'link') {
+            const r = resolveLink(st, path);
+            if (r.dangling) return [err('cat: ' + args[0] + ': No such file or directory（软链接已悬空）')];
+            path = r.path;
+          }
           const f = st.files[path];
           if (!f) return [err('cat: ' + args[0] + ': No such file or directory')];
+          if (f.type === 'archive') return [err('cat: ' + args[0] + ': 二进制文件，用 tar -tf 查看内容')];
           if (!canTraverse(st, parentOf(path), st.user)) return [err('cat: ' + args[0] + ': Permission denied')];
           if (!can(st, f, st.user, 'r')) return [err('cat: ' + args[0] + ': Permission denied')];
           out.push(ok(String(f.content || '').replace(/\n$/, '')));
@@ -685,6 +770,214 @@
           return out;
         }
 
+        case 'ln': {
+          const flags = args.filter((a) => a.startsWith('-')).join('');
+          const rest = args.filter((a) => !a.startsWith('-'));
+          const symbolic = flags.indexOf('s') >= 0;
+          if (!rest.length) return [err('ln: missing file operand')];
+
+          const srcRaw = rest[0];
+          const srcPath = normalize(srcRaw, st.cwd);
+          const dstRaw = rest[1] || baseOf(srcPath);
+          const dstPath = normalize(dstRaw, st.cwd);
+          const kind = symbolic ? 'symbolic link' : 'hard link';
+
+          const parent = st.files[parentOf(dstPath)];
+          if (!parent) return [err('ln: failed to create ' + kind + ' \'' + dstRaw + '\': No such file or directory')];
+          if (!can(st, parent, st.user, 'wx')) return [err('ln: failed to create ' + kind + ' \'' + dstRaw + '\': Permission denied')];
+          if (st.files[dstPath]) return [err('ln: failed to create ' + kind + ' \'' + dstRaw + '\': File exists')];
+
+          if (symbolic) {
+            // 软链接允许指向不存在的目标（悬空链接是合法状态）。
+            // 相对目标按链接所在目录解析，而不是当前目录——这是 ln -s 最容易搞错的地方。
+            const absTarget = srcRaw.charAt(0) === '/' ? srcRaw : normalize(srcRaw, parentOf(dstPath));
+            st.files[dstPath] = {
+              type: 'link',
+              owner: st.user,
+              group: st.users[st.user].groups[0],
+              mode: '777',
+              target: absTarget,
+              target_raw: srcRaw,
+            };
+            const dangling = !st.files[absTarget];
+            out.push(dim('（软链接 ' + dstPath + ' -> ' + absTarget + (dangling ? '，目标不存在，链接已悬空' : '') + '）'));
+            return out;
+          }
+
+          // 硬链接：源若是软链接，按 GNU ln 的行为链接到它指向的真实文件
+          let realPath = srcPath;
+          if (st.files[srcPath] && st.files[srcPath].type === 'link') {
+            const r = resolveLink(st, srcPath);
+            if (r.dangling) return [err('ln: failed to access \'' + srcRaw + '\': No such file or directory')];
+            realPath = r.path;
+          }
+          const src = st.files[realPath];
+          if (!src) return [err('ln: failed to access \'' + srcRaw + '\': No such file or directory')];
+          if (src.type === 'dir') return [err('ln: \'' + srcRaw + '\': hard link not allowed for directory')];
+
+          const ino = inodeOf(st, realPath);
+          const entry = { type: 'file', owner: src.owner, group: src.group, mode: src.mode, content: src.content, inode: ino };
+          if (typeof src.size_mb === 'number') entry.size_mb = src.size_mb;
+          st.files[dstPath] = entry;
+          out.push(dim('（硬链接 ' + dstPath + ' 与 ' + realPath + ' 共用 inode ' + ino + '，链接数 ' + linkCount(st, dstPath) + '）'));
+          return out;
+        }
+
+        case 'find': {
+          let root = '.';
+          let i = 0;
+          if (args[0] && !args[0].startsWith('-')) {
+            root = args[0];
+            i = 1;
+          }
+          const rootPath = normalize(root, st.cwd);
+          if (!st.files[rootPath]) return [err('find: \'' + root + '\': No such file or directory')];
+
+          let typeFilter = null;
+          let nameRe = null;
+          let sizeExpr = null;
+          for (; i < args.length; i++) {
+            const a = args[i];
+            if (a === '-type') {
+              typeFilter = args[++i];
+              if (!typeFilter) return [err('find: missing argument to `-type\'')];
+            } else if (a === '-name') {
+              if (args[i + 1] === undefined) return [err('find: missing argument to `-name\'')];
+              nameRe = globToRe(args[++i]);
+            } else if (a === '-size') {
+              if (args[i + 1] === undefined) return [err('find: missing argument to `-size\'')];
+              sizeExpr = parseSizeExpr(args[++i]);
+              if (!sizeExpr) return [err('find: invalid -size argument: \'' + args[i] + '\'')];
+            } else {
+              return [err('find: unknown predicate \'' + a + '\'')];
+            }
+          }
+
+          const hits = walkPaths(st, rootPath).filter((p) => {
+            const f = st.files[p];
+            if (typeFilter) {
+              const t = f.type === 'dir' ? 'd' : f.type === 'link' ? 'l' : 'f';
+              if (t !== typeFilter) return false;
+            }
+            if (nameRe && !nameRe.test(baseOf(p))) return false;
+            if (sizeExpr && !sizeMatches(sizeExpr, fileBytes(f))) return false;
+            return true;
+          });
+          if (!hits.length) return [ok('')];
+          hits.forEach((p) => out.push(ok(p)));
+          return out;
+        }
+
+        case 'tar': {
+          const flagArg = args.find((a) => a.startsWith('-'));
+          if (!flagArg) return [err('tar: You must specify one of the \'-Acdtrux\' options')];
+          const flags = flagArg.slice(1);
+          const create = flags.indexOf('c') >= 0;
+          const list = flags.indexOf('t') >= 0;
+          const extract = flags.indexOf('x') >= 0;
+          if (!create && !list && !extract) {
+            return [err('tar: You must specify one of the \'-Acdtrux\' options')];
+          }
+
+          // 收集位置参数，同时处理 -C（它带一个目录值）
+          let destDir = st.cwd;
+          const positional = [];
+          for (let i = 0; i < args.length; i++) {
+            const a = args[i];
+            if (a === '-C') {
+              if (!args[i + 1]) return [err('tar: -C requires an argument')];
+              destDir = normalize(args[i + 1], st.cwd);
+              i++;
+              continue;
+            }
+            if (a.startsWith('-')) continue;
+            positional.push(a);
+          }
+
+          if (flags.indexOf('f') < 0) return [err('tar: 本模拟环境要求用 -f 指定归档文件')];
+          const archiveArg = positional[0];
+          if (!archiveArg) return [err('tar: 缺少归档文件名')];
+          const operands = positional.slice(1);
+          const archivePath = normalize(archiveArg, st.cwd);
+
+          if (create) {
+            if (!operands.length) return [err('tar: Cowardly refusing to create an empty archive')];
+            const entries = [];
+            const members = {};
+            let missing = null;
+            operands.forEach((op) => {
+              const p = normalize(op, st.cwd);
+              if (!st.files[p]) {
+                if (!missing) missing = op;
+                return;
+              }
+              walkPaths(st, p).forEach((q) => {
+                const rel = q === p ? baseOf(p) : baseOf(p) + q.slice(p.length);
+                const src = st.files[q];
+                const isDir = src.type === 'dir';
+                entries.push(rel + (isDir ? '/' : ''));
+                members[rel] = {
+                  type: isDir ? 'dir' : 'file',
+                  content: src.content || '',
+                  size_mb: src.size_mb,
+                  owner: src.owner,
+                  group: src.group,
+                  mode: src.mode,
+                };
+              });
+            });
+            if (missing) return [err('tar: ' + missing + ': Cannot stat: No such file or directory')];
+
+            const parent = st.files[parentOf(archivePath)];
+            if (parent && !can(st, parent, st.user, 'wx')) {
+              return [err('tar: ' + archiveArg + ': Cannot open: Permission denied')];
+            }
+            st.files[archivePath] = {
+              type: 'archive',
+              owner: st.user,
+              group: st.users[st.user].groups[0],
+              mode: '644',
+              format: flags.indexOf('z') >= 0 ? 'tar.gz' : 'tar',
+              entries,
+              members,
+              content: '',
+            };
+            out.push(dim('（已创建 ' + archivePath + '，' + entries.length + ' 个条目）'));
+            return out;
+          }
+
+          const archive = st.files[archivePath];
+          if (!archive || archive.type !== 'archive') {
+            return [err('tar: ' + archiveArg + ': Cannot open: No such file or directory')];
+          }
+
+          if (list) {
+            archive.entries.forEach((e) => out.push(ok(e)));
+            return out;
+          }
+
+          // extract
+          if (!st.files[destDir] || st.files[destDir].type !== 'dir') {
+            return [err('tar: ' + destDir + ': Cannot open: No such file or directory')];
+          }
+          archive.entries.forEach((e) => {
+            const name = e.replace(/\/$/, '');
+            const m = archive.members[name];
+            if (!m) return;
+            const target = normalize(name, destDir);
+            if (m.type === 'dir') {
+              mkdirs(st, target);
+              return;
+            }
+            const entry = { type: 'file', owner: m.owner, group: m.group, mode: m.mode, content: m.content };
+            if (typeof m.size_mb === 'number') entry.size_mb = m.size_mb;
+            mkdirs(st, parentOf(target));
+            st.files[target] = entry;
+          });
+          out.push(dim('（已解包 ' + archivePath + ' 到 ' + destDir + '）'));
+          return out;
+        }
+
         case 'echo': {
           const ri = args.findIndex((a) => a === '>' || a === '>>');
           if (ri < 0) {
@@ -695,6 +988,7 @@
           const target = args[ri + 1];
           const append = args[ri] === '>>';
           if (!target) return [err('bash: syntax error near unexpected token `newline\'')];
+          const path = normalize(target, st.cwd);
           const parent = parentOf(path);
           if (st.files[parent] && !can(st, st.files[parent], st.user, 'wx')) return [err('bash: ' + target + ': Permission denied')];
           if (!st.files[path]) touchFile(st, path, st.user);
@@ -1279,6 +1573,27 @@
         return String(val) === String(v.value);
       case 'contains':
         return Array.isArray(val) && val.indexOf(v.value) >= 0;
+      case 'includes':
+        return typeof val === 'string' && val.indexOf(v.value) >= 0;
+      case 'absent':
+        return val === undefined || val === null;
+      case 'same_inode': {
+        // v.path 指向某个文件的 inode，v.value 是另一个路径；两者必须是同一 inode 的普通文件
+        const a = v.path[1];
+        const b = v.value;
+        if (!st.files[a] || !st.files[b]) return false;
+        if (st.files[a].type === 'link' || st.files[b].type === 'link') return false;
+        return inodeOf(st, a) !== undefined && inodeOf(st, a) === inodeOf(st, b);
+      }
+      case 'archive_has': {
+        // 归档条目里是否有某个文件：容忍 source/old.log、./old.log、old.log 这几种写法
+        if (!Array.isArray(val)) return false;
+        const want = String(v.value);
+        return val.some((e) => {
+          const name = String(e).replace(/\/$/, '');
+          return name === want || name.endsWith('/' + want);
+        });
+      }
       case 'gte':
         return Number(val) >= Number(v.value);
       case 'grant': {
@@ -1387,7 +1702,24 @@
     const fileKeys = Object.keys(st.files).filter((p) => p !== '/');
     groups.push({
       title: '关键文件',
-      rows: fileKeys.slice(0, 14).map((p) => ({ k: p, v: fmtMode(st, st.files[p]) + ' ' + st.files[p].owner + ':' + st.files[p].group, cls: '' })),
+      rows: fileKeys.slice(0, 18).map((p) => {
+        const f = st.files[p];
+        // 一行放不下「路径 + 权限 + 属主 + inode + 大小」，所以把链接目标/inode/大小放到副行，
+        // 保证路径不会被挤成省略号——状态面板是判分依据，路径比 inode 更不能省。
+        const bits = [];
+        let sub = '';
+        if (f.type === 'link') {
+          sub = '-> ' + (f.target || '?') + (st.files[f.target] ? '' : '（悬空）');
+        } else if (f.type === 'archive') {
+          sub = '归档 ' + (f.entries || []).length + ' 项';
+        } else if (f.inode !== undefined) {
+          sub = 'inode ' + f.inode;
+        }
+        if (typeof f.size_mb === 'number') bits.push(f.size_mb + ' MiB');
+        if (sub && bits.length) sub += ' · ' + bits.join(' · ');
+        else if (bits.length) sub = bits.join(' · ');
+        return { k: p, v: fmtMode(st, f) + ' ' + f.owner + ':' + f.group, sub, cls: f.type === 'link' && !st.files[f.target] ? 'bad' : '' };
+      }),
     });
     if (Object.keys(st.services).length) {
       groups.push({
