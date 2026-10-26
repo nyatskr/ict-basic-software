@@ -167,7 +167,7 @@
       "把 setgid 与 sticky 的作用搞反",
       "以为 `1777` 能防止别人改你的文件内容"
     ],
-    "question_ids": ["OE-05"],
+    "question_ids": ["OE-05", "OE-X05"],
     "lab_ids": ["oe-lab-perm-01"],
     "search_terms": ["linux setgid 目录", "linux sticky bit 粘滞位"],
     "gaps": "两条视频都是单点演示，完整的协作目录配置流程由本站实验 oe-lab-perm-01 覆盖。"
@@ -300,7 +300,7 @@
       "把顺序写成“时 分 日 月 周”",
       "在 cron 里依赖 `~/.bashrc` 里设置的 PATH"
     ],
-    "question_ids": ["OE-15"],
+    "question_ids": ["OE-15", "OE-X06"],
     "lab_ids": [],
     "search_terms": ["crontab 五个字段", "linux 定时任务"],
     "gaps": "主视频 16:37 偏长，时间紧时看补充那条。"
@@ -354,7 +354,7 @@
       }
     ],
     "pitfalls": ["只看 `free` 一列就判定内存泄漏"],
-    "question_ids": ["OE-18"],
+    "question_ids": ["OE-18", "OE-X07"],
     "lab_ids": [],
     "search_terms": ["linux free available 区别", "vmstat si so"],
     "gaps": "这一节还没有找到合适的短视频，先用文字说明。"
@@ -471,7 +471,7 @@
       "只加 `--permanent` 不 reload 就断言“没生效”",
       "把关闭 SELinux 当成放行端口的手段"
     ],
-    "question_ids": ["OE-25"],
+    "question_ids": ["OE-25", "OE-X08"],
     "lab_ids": ["oe-lab-svc-01"],
     "search_terms": ["firewall-cmd permanent reload", "firewalld 开放端口"],
     "gaps": "主资料是阿里云图文（已读正文），视频只演示 --add-port。"
@@ -554,7 +554,7 @@
       }
     ],
     "pitfalls": ["把 RAG 当成“装个 K3s 就能问答”", "把 Embedding 服务与推理模型混为一谈"],
-    "question_ids": ["OE-30"],
+    "question_ids": ["OE-30", "OE-X09"],
     "lab_ids": [],
     "search_terms": ["openEuler Intelligence 知识库", "RAG 流程 embedding"],
     "gaps": "这是本赛季新增模块，没有可用的中文讲解视频，只做概念级准备。"

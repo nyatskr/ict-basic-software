@@ -407,37 +407,44 @@
           if (!f) return [err('chmod: cannot access \'' + target + '\': No such file or directory')];
           if (st.user !== 'root' && f.owner !== st.user) return [err('chmod: changing permissions of \'' + target + '\': Operation not permitted')];
           if (/^[0-7]{3,4}$/.test(mode)) {
-            f.mode = mode.length === 3 ? mode : mode;
+            f.mode = mode;
           } else {
-            // 符号模式：u+x、g+s、o-r、a=rwx
-            const m = mode.match(/^([ugoa]*)([+\-=])([rwxst]+)$/);
-            if (!m) return [err('chmod: invalid mode: \'' + mode + '\'')];
-            const who = m[1] || 'a';
-            const op = m[2];
-            const perms = m[3];
+            /* 符号模式：u+x、g+s、o-r、a=rwx，且支持逗号分隔多子句
+               （chmod u=rwx,g=rwx,o= 与 chmod g+s,o+t 必须都能解析） */
             const d = modeDigits(f.mode).split('').map((x) => parseInt(x, 10));
-            const sp = modeSpecial(f.mode);
-            let spNew = sp;
+            let spNew = modeSpecial(f.mode);
             const idx = { u: 0, g: 1, o: 2 };
-            const apply = (i) => {
-              for (const ch of perms) {
-                if (ch === 'r') d[i] = op === '-' ? d[i] & ~4 : d[i] | 4;
-                else if (ch === 'w') d[i] = op === '-' ? d[i] & ~2 : d[i] | 2;
-                else if (ch === 'x') d[i] = op === '-' ? d[i] & ~1 : d[i] | 1;
-                else if (ch === 's') {
-                  if (i === 0) spNew = op === '-' ? spNew & ~4 : spNew | 4;
-                  if (i === 1) spNew = op === '-' ? spNew & ~2 : spNew | 2;
-                } else if (ch === 't') spNew = op === '-' ? spNew & ~1 : spNew | 1;
+            const has = (who, w) => who === 'a' || who.indexOf(w) >= 0;
+            for (const clause of mode.split(',')) {
+              const m = clause.match(/^([ugoa]*)([+\-=])([rwxst]*)$/);
+              if (!m) return [err('chmod: invalid mode: \'' + mode + '\'')];
+              const who = m[1] || 'a';
+              const op = m[2];
+              const perms = m[3];
+              // 只有 = 允许空权限（表示清空），+/- 必须带权限字符
+              if (!perms && op !== '=') return [err('chmod: invalid mode: \'' + mode + '\'')];
+              if (op === '=') {
+                ['u', 'g', 'o'].forEach((w) => {
+                  if (has(who, w)) d[idx[w]] = 0;
+                });
+                if (has(who, 'u')) spNew &= ~4;
+                if (has(who, 'g')) spNew &= ~2;
+                if (has(who, 'o')) spNew &= ~1;
               }
-            };
-            if (op === '=') {
               ['u', 'g', 'o'].forEach((w) => {
-                if (who.indexOf(w) >= 0) d[idx[w]] = 0;
+                if (!has(who, w)) return;
+                const i = idx[w];
+                for (const ch of perms) {
+                  if (ch === 'r') d[i] = op === '-' ? d[i] & ~4 : d[i] | 4;
+                  else if (ch === 'w') d[i] = op === '-' ? d[i] & ~2 : d[i] | 2;
+                  else if (ch === 'x') d[i] = op === '-' ? d[i] & ~1 : d[i] | 1;
+                  else if (ch === 's') {
+                    if (i === 0) spNew = op === '-' ? spNew & ~4 : spNew | 4;
+                    if (i === 1) spNew = op === '-' ? spNew & ~2 : spNew | 2;
+                  } else if (ch === 't') spNew = op === '-' ? spNew & ~1 : spNew | 1;
+                }
               });
             }
-            ['u', 'g', 'o'].forEach((w) => {
-              if (who.indexOf(w) >= 0 || who === 'a') apply(idx[w]);
-            });
             f.mode = (spNew ? String(spNew) : '') + d.join('');
           }
           out.push(dim('（' + path + ' 现在是 ' + fmtMode(st, f) + '）'));
@@ -1111,13 +1118,18 @@
       if (/^GRANT\s+/i.test(line)) {
         const m = line.match(/^GRANT\s+(.+?)\s+ON\s+(.+?)\s+TO\s+([A-Za-z_][\w$]*)/i);
         if (!m) return [err('语法错误：GRANT <priv> ON <object> TO <role>')];
-        const priv = m[1].trim().toUpperCase().replace(/\s+/g, ' ');
+        const privs = splitPrivs(m[1]);
         const objRaw = m[2].trim();
         const role = m[3];
         if (!st.roles[role]) return [err('ERROR:  role "' + role + '" does not exist')];
         const object = normalizeObject(st, objRaw);
         if (!object) return [err('ERROR:  对象不存在：' + objRaw)];
-        st.grants.push({ priv, object, role });
+        for (const priv of privs) {
+          // 同一条授权重复执行不叠加
+          if (!st.grants.some((g) => g.priv === priv && g.object === object && g.role === role)) {
+            st.grants.push({ priv, object, role });
+          }
+        }
         out.push(ok('GRANT'));
         return out;
       }
@@ -1125,9 +1137,12 @@
       if (/^REVOKE\s+/i.test(line)) {
         const m = line.match(/^REVOKE\s+(.+?)\s+ON\s+(.+?)\s+FROM\s+([A-Za-z_][\w$]*)/i);
         if (!m) return [err('语法错误：REVOKE <priv> ON <object> FROM <role>')];
+        const privs = splitPrivs(m[1]);
         const object = normalizeObject(st, m[2].trim());
         const before = st.grants.length;
-        st.grants = st.grants.filter((g) => !(g.role === m[3] && g.object === object && g.priv === m[1].trim().toUpperCase()));
+        st.grants = st.grants.filter(
+          (g) => !(g.role === m[3] && g.object === object && privs.indexOf(g.priv) >= 0),
+        );
         out.push(ok(st.grants.length === before ? 'REVOKE 0' : 'REVOKE'));
         return out;
       }
@@ -1209,31 +1224,47 @@
     },
   };
 
+  /* 把 GRANT 里的对象描述归一成 "类型:名字"，找不到返回 null。
+     注意：字典的键是原始大小写，不能把整个字符串转大写再去查（那样永远查不到）。 */
   function normalizeObject(st, raw) {
     const s = raw.trim();
-    const up = s.toUpperCase();
+    const pick = (dict, name) => {
+      const low = name.toLowerCase();
+      return Object.keys(dict).find((k) => k.toLowerCase() === low) || null;
+    };
     let m;
-    if ((m = up.match(/^DATABASE\s+([A-Za-z_][\w$]*)$/))) {
-      return st.databases[m[1]] ? 'database:' + m[1] : null;
+
+    if (/^all\s+tables\s+in\s+schema\s+/i.test(s)) {
+      const sc = pick(st.schemas, s.split(/\s+/).pop());
+      return sc ? 'schema-tables:' + sc : null;
     }
-    if ((m = up.match(/^SCHEMA\s+([A-Za-z_][\w$]*)$/))) {
-      return st.schemas[m[1]] ? 'schema:' + m[1] : null;
+    if ((m = s.match(/^database\s+([A-Za-z_][\w$]*)$/i))) {
+      const db = pick(st.databases, m[1]);
+      return db ? 'database:' + db : null;
     }
-    if ((m = up.match(/^(?:TABLE\s+)?([A-Za-z_][\w$]*\.[A-Za-z_][\w$]*|[A-Za-z_][\w$]*)$/))) {
+    if ((m = s.match(/^schema\s+([A-Za-z_][\w$]*)$/i))) {
+      const sc = pick(st.schemas, m[1]);
+      return sc ? 'schema:' + sc : null;
+    }
+    if ((m = s.match(/^(?:table\s+)?([A-Za-z_][\w$]*\.[A-Za-z_][\w$]*|[A-Za-z_][\w$]*)$/i))) {
       const t = resolveTable(st, m[1]);
       return t ? 'table:' + t : null;
-    }
-    if (/^ALL\s+TABLES\s+IN\s+SCHEMA\s+/i.test(s)) {
-      const sc = s.split(/\s+/).pop();
-      return st.schemas[sc] ? 'schema-tables:' + sc : null;
     }
     return null;
   }
 
   function resolveTable(st, name) {
     if (st.tables[name]) return name;
-    const cand = Object.keys(st.tables).find((k) => k.split('.')[1] === name);
-    return cand || null;
+    const low = name.toLowerCase();
+    return Object.keys(st.tables).find((k) => k.toLowerCase() === low) || null;
+  }
+
+  /* "SELECT, DELETE" → ["SELECT","DELETE"]；"ALL PRIVILEGES" 原样返回 */
+  function splitPrivs(raw) {
+    return String(raw)
+      .split(',')
+      .map((x) => x.trim().toUpperCase().replace(/\s+/g, ' '))
+      .filter(Boolean);
   }
 
   /* ---------------- 判分 ---------------- */

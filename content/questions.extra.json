@@ -56,5 +56,215 @@
     ],
     "answer": ["A", "B", "C"],
     "explain": "mask 限制的是命名用户、命名组与 group 条目，不含 owner 与 other；D 错在“一定”——若之前用 `-m m::r` 显式设过 mask，再加用户条目不会把它改回 rwx，此时 effective 仍被压到 r。"
+  },
+  {
+    "id": "OE-X05",
+    "domain": "oe",
+    "kind": "多选",
+    "cluster": "文件、用户与权限",
+    "stem": "管理员已执行 `chgrp dev /srv/share` 和 `chmod 3770 /srv/share`。关于这个协作目录，正确的是：",
+    "options": [
+      { "id": "A", "text": "新建对象会继承目录的 dev 属组" },
+      { "id": "B", "text": "普通组员不能删除或改名其他用户创建的对象" },
+      { "id": "C", "text": "不属于 dev 组的普通用户没有目录访问权限" },
+      { "id": "D", "text": "sticky bit 会阻止组员修改一个本来就对组可写的文件内容" }
+    ],
+    "answer": ["A", "B", "C"],
+    "explain": "`3` 等于 setgid（2）加 sticky（1），`770` 给属主和属组 rwx、其他用户无权限。setgid 让新对象继承 dev 组；sticky 限制目录项的删除与改名，但不改变文件自身的读写权限，所以 D 错。"
+  },
+  {
+    "id": "OE-X06",
+    "domain": "oe",
+    "kind": "单选",
+    "cluster": "软件、服务、计划任务、进程",
+    "stem": "要在系统级 `/etc/crontab` 中让 root 每天 03:30 执行 `/opt/backup.sh`，正确的一行是：",
+    "options": [
+      { "id": "A", "text": "`30 3 * * * root /opt/backup.sh`" },
+      { "id": "B", "text": "`3 30 * * * root /opt/backup.sh`" },
+      { "id": "C", "text": "`30 3 * * * /opt/backup.sh`" },
+      { "id": "D", "text": "`root 30 3 * * * /opt/backup.sh`" }
+    ],
+    "answer": ["A"],
+    "explain": "系统级 crontab 的顺序是“分 时 日 月 周 用户 命令”，所以 03:30 写成 `30 3 * * * root ...`。用户自己的 `crontab -e` 没有 user 字段。"
+  },
+  {
+    "id": "OE-X07",
+    "domain": "oe",
+    "kind": "单选",
+    "cluster": "软件、服务、计划任务、进程",
+    "stem": "`free` 显示 free 很小但 available 仍很大，`vmstat` 的 si/so 持续为 0，近期也没有 OOM 日志。最合理的判断是：",
+    "options": [
+      { "id": "A", "text": "系统已经发生严重内存泄漏" },
+      { "id": "B", "text": "大量内存可能被可回收缓存利用，现有证据不足以判定内存紧张" },
+      { "id": "C", "text": "必须立即清空 page cache" },
+      { "id": "D", "text": "只要 free 小就一定会触发 OOM" }
+    ],
+    "answer": ["B"],
+    "explain": "Linux 会主动利用空闲内存做缓存，`available` 更接近“不发生交换即可供新程序使用”的估计值。还应结合 swap 活动、缺页和 OOM 记录，不能只凭 free 一列下结论。"
+  },
+  {
+    "id": "OE-X08",
+    "domain": "oe",
+    "kind": "多选",
+    "cluster": "存储、网络与 Shell",
+    "stem": "执行 `firewall-cmd --permanent --add-port=8080/tcp` 后，希望规则立即生效并确认重启后仍保留，还应做哪些操作？",
+    "options": [
+      { "id": "A", "text": "执行 `firewall-cmd --reload`" },
+      { "id": "B", "text": "查询运行时视图中的 8080/tcp" },
+      { "id": "C", "text": "查询 permanent 视图中的 8080/tcp" },
+      { "id": "D", "text": "关闭 SELinux 即可代替上述验证" }
+    ],
+    "answer": ["A", "B", "C"],
+    "explain": "`--permanent` 只修改持久配置，`--reload` 才把它装载到运行时。验收要分别查询 runtime 与 permanent 两套视图；SELinux 是另一层访问控制，不能代替防火墙规则验证。"
+  },
+  {
+    "id": "OE-X09",
+    "domain": "oe",
+    "kind": "单选",
+    "cluster": "iSula 与 Intelligence",
+    "stem": "RAG 知识库已经成功导入并完成分块，但查询始终召回不到相关片段。下一步最应优先检查：",
+    "options": [
+      { "id": "A", "text": "是否重新训练了大模型全部权重" },
+      { "id": "B", "text": "Embedding 服务、向量索引和检索阈值是否正常" },
+      { "id": "C", "text": "容器是否开启了 sticky bit" },
+      { "id": "D", "text": "是否把数据库改成列存" }
+    ],
+    "answer": ["B"],
+    "explain": "导入和分块已完成后，召回为空应沿“向量化 → 向量索引 → 检索参数”继续排查。RAG 通过外部知识检索增强生成，不要求为每次知识更新重新训练模型权重。"
+  },
+  {
+    "id": "OG-X01",
+    "domain": "og",
+    "kind": "单选",
+    "cluster": "索引、执行计划与存储",
+    "stem": "表 orders 上有 B-tree 组合索引 `(customer_id, created_at)`。下列条件通常最能直接利用该索引的列顺序的是：",
+    "options": [
+      { "id": "A", "text": "`WHERE created_at >= DATE '2026-01-01'`" },
+      { "id": "B", "text": "`WHERE customer_id = 42 AND created_at >= DATE '2026-01-01'`" },
+      { "id": "C", "text": "`WHERE upper(customer_name) = 'ALICE'`" },
+      { "id": "D", "text": "没有 WHERE 条件的全表统计" }
+    ],
+    "answer": ["B"],
+    "explain": "组合索引先按 customer_id、再按 created_at 排序；等值限定首列后再对第二列做范围查询最贴合这个顺序。是否最终走索引仍由优化器结合选择性、统计信息与成本决定。"
+  },
+  {
+    "id": "OG-X02",
+    "domain": "og",
+    "kind": "多选",
+    "cluster": "索引、执行计划与存储",
+    "stem": "关于 openGauss 行存与列存的选型，正确的是：",
+    "options": [
+      { "id": "A", "text": "高频点查和频繁行级更新通常更适合行存" },
+      { "id": "B", "text": "大批量导入后主要扫描少数列做聚合，通常更适合列存" },
+      { "id": "C", "text": "列存一定比行存适合所有 OLTP 工作负载" },
+      { "id": "D", "text": "表的 ORIENTATION 设置成功后可以随时原地切换" }
+    ],
+    "answer": ["A", "B"],
+    "explain": "行存把同一行放在一起，适合点查和频繁增删改；列存减少只读少数列时的 I/O，适合大范围扫描与聚合。openGauss 文档也说明 ORIENTATION 设置成功后不能直接修改。"
+  },
+  {
+    "id": "OG-X03",
+    "domain": "og",
+    "kind": "多选",
+    "cluster": "备份、集群、安全与监控",
+    "stem": "关于 openGauss 全密态数据库的 CMK/CEK 密钥链，正确的是：",
+    "options": [
+      { "id": "A", "text": "CMK 用于保护列加密密钥 CEK" },
+      { "id": "B", "text": "CEK 用于加密指定列中的敏感数据" },
+      { "id": "C", "text": "使用 gsql 操作全密态数据库时需要启用 `-C`" },
+      { "id": "D", "text": "全密态与 TLS 传输加密、磁盘静态加密是同一机制" }
+    ],
+    "answer": ["A", "B", "C"],
+    "explain": "密钥链是 CMK → CEK → 列数据；gsql 需要用 `-C` 启用全密态客户端能力。全密态、TLS 和磁盘静态加密保护的层次不同，不能混为一谈。"
+  },
+  {
+    "id": "OG-X04",
+    "domain": "og",
+    "kind": "多选",
+    "cluster": "备份、集群、安全与监控",
+    "stem": "关于 openGauss 账本数据库的一致性检查，正确的是：",
+    "options": [
+      { "id": "A", "text": "`ledger_hist_check` 可检查防篡改用户表与对应历史表的一致性" },
+      { "id": "B", "text": "`ledger_gchain_check` 还会把全局区块表纳入一致性检查" },
+      { "id": "C", "text": "检查返回 false 表示存在不一致，需要审计追踪" },
+      { "id": "D", "text": "账本的主要目标是隐藏明文内容，因此可以替代列加密" }
+    ],
+    "answer": ["A", "B", "C"],
+    "explain": "`ledger_hist_check` 检查用户表与历史表，`ledger_gchain_check` 再覆盖全局区块表；返回 false 表示一致性校验失败。账本侧重完整性、留痕和篡改发现，不提供数据保密性。"
+  },
+  {
+    "id": "KP-X01",
+    "domain": "kp",
+    "kind": "多选",
+    "cluster": "编译、依赖与容器",
+    "stem": "把 x86_64 容器改造成可同时支持 x86_64 与 AArch64 的多架构镜像时，应检查：",
+    "options": [
+      { "id": "A", "text": "每个构建阶段的基础镜像都提供目标架构 manifest" },
+      { "id": "B", "text": "复制进镜像的二进制、Agent 和依赖包都有 AArch64 版本" },
+      { "id": "C", "text": "两个架构的镜像都完成实际启动与功能验证" },
+      { "id": "D", "text": "只要最终镜像标签相同，内部二进制架构就无需检查" }
+    ],
+    "answer": ["A", "B", "C"],
+    "explain": "多架构标签只是分发入口，不能自动转换镜像里的二进制。要逐个检查多阶段构建的基础镜像、复制件和依赖，并在每个目标架构上真正运行验证。"
+  },
+  {
+    "id": "KP-X02",
+    "domain": "kp",
+    "kind": "多选",
+    "cluster": "编译、依赖与容器",
+    "stem": "一份可验收的鲲鹏迁移交付物，除“编译成功”外还应包含：",
+    "options": [
+      { "id": "A", "text": "组件、版本、架构、来源与处理方式清单" },
+      { "id": "B", "text": "风险项以及与之对应的验证结果" },
+      { "id": "C", "text": "功能与性能基线、回归结果和回退方案" },
+      { "id": "D", "text": "只保留最终二进制，不记录依赖和变更" }
+    ],
+    "answer": ["A", "B", "C"],
+    "explain": "迁移完成的证据应能回答“迁了什么、怎么处理、风险是什么、如何证明可用、如何回退”。编译通过只是中间结果，不能替代功能、性能和交付验收。"
+  },
+  {
+    "id": "KP-X03",
+    "domain": "kp",
+    "kind": "单选",
+    "cluster": "DevKit 与性能优化",
+    "stem": "要扫描 C/C++ 项目中的架构相关源码、构建文件和依赖库，并获得迁移修改建议，最匹配的 Kunpeng DevKit 能力是：",
+    "options": [
+      { "id": "A", "text": "源码迁移（Source Code Porting）" },
+      { "id": "B", "text": "热点函数分析" },
+      { "id": "C", "text": "KAE 压缩加速" },
+      { "id": "D", "text": "数据库账本检查" }
+    ],
+    "answer": ["A"],
+    "explain": "源码迁移能力负责扫描源码、构建工程、链接库和架构相关代码并给出迁移建议；热点分析解决性能定位，KAE 是加解密/压缩加速组件，目标不同。"
+  },
+  {
+    "id": "KP-X04",
+    "domain": "kp",
+    "kind": "单选",
+    "cluster": "DevKit 与性能优化",
+    "stem": "某进程 CPU 利用率很高，需要先获得热点函数及其调用关系。最合适的第一轮证据采集是：",
+    "options": [
+      { "id": "A", "text": "直接重写最复杂的函数" },
+      { "id": "B", "text": "用 `perf record -g` 采样，再用 `perf report` 查看热点与调用栈" },
+      { "id": "C", "text": "只记录一次 `top` 截图" },
+      { "id": "D", "text": "先把所有线程绑到同一个 CPU" }
+    ],
+    "answer": ["B"],
+    "explain": "`perf record -g` 在采样时保留调用栈，`perf report` 用于查看热点和调用关系。CPU 利用率只能说明现象，不能直接定位到需要优化的函数。"
+  },
+  {
+    "id": "KP-X05",
+    "domain": "kp",
+    "kind": "多选",
+    "cluster": "DevKit 与性能优化",
+    "stem": "评估是否为业务接入 KAE 时，正确的做法是：",
+    "options": [
+      { "id": "A", "text": "先确认负载是否集中在受支持的加解密或压缩算法" },
+      { "id": "B", "text": "核对处理器、驱动、KAE 库版本及应用调用接口" },
+      { "id": "C", "text": "用接近真实包长和并发度的基准验证兼容性与收益" },
+      { "id": "D", "text": "把 KAE 当成对所有工作负载都自动生效的通用加速开关" }
+    ],
+    "answer": ["A", "B", "C"],
+    "explain": "KAE 面向特定的加解密和压缩场景，收益还受硬件、驱动、库、算法、包长和调用方式影响。应先匹配瓶颈，再核对依赖并用真实负载验证。"
   }
 ]

@@ -131,7 +131,8 @@ def build_labs(labs, catalog, sections):
         "## 设计原则",
         "",
         "- **按最终状态评分，不按命令字符串评分。** 校验项读的是状态机里的最终状态（用户属组、文件 mode、"
-        "服务 active/enabled、防火墙端口、PV/VG/LV/挂载、角色授权），因此 `chmod 3770` 与 `chmod g+s,o+t` 都算对。",
+        "服务 active/enabled、防火墙端口、PV/VG/LV/挂载、角色授权），因此 `chmod 3770` 与"
+        " `chmod u=rwx,g=rwx,o= && chmod g+s,o+t` 两种写法都算对（单独 `chmod g+s,o+t` 只加特殊位，不构成等价）。",
         "- 分值合计固定 100，**≥80 分算通过**。未通过时逐项列出没打勾的校验项。",
         "- 每个实验都能**一键重置**，回到 `initial_state` 重来，不计惩罚。",
         "- 实验分三层：L1 只读证据做判断；L2 可操作的状态机模拟；L3 真实沙箱（尚未接入）。",

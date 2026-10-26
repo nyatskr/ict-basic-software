@@ -189,7 +189,7 @@ def build(markdown):
 
     bank = {
         "schema_version": 1,
-        "bank_version": "2026.10-b1",
+        "bank_version": "2026.10-b2",
         "title": "基础软件赛道 · 理论题库",
         "scope_note": catalog["site"]["scope_note"],
         "updated_at": catalog["updated_at"],

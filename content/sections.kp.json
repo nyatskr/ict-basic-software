@@ -153,7 +153,7 @@
       }
     ],
     "pitfalls": ["只检查 `FROM` 的基础镜像，漏掉多阶段构建的 builder 阶段"],
-    "question_ids": ["KP-13"],
+    "question_ids": ["KP-13", "KP-X01"],
     "lab_ids": [],
     "search_terms": ["multi-arch 镜像 buildx", "鲲鹏 容器迁移"],
     "gaps": "暂无视频。"
@@ -177,7 +177,7 @@
       }
     ],
     "pitfalls": ["把“编译通过”当成迁移完成", "不留回退方案"],
-    "question_ids": ["KP-16"],
+    "question_ids": ["KP-16", "KP-X02"],
     "lab_ids": [],
     "search_terms": ["软件迁移流程 评估 验证"],
     "gaps": "暂无视频。"
@@ -201,7 +201,7 @@
       }
     ],
     "pitfalls": ["把 DevKit 当成单一命令行工具", "记不清时凭旧产品名猜参数"],
-    "question_ids": ["KP-17"],
+    "question_ids": ["KP-17", "KP-X03"],
     "lab_ids": [],
     "search_terms": ["Kunpeng DevKit 工具 能力"],
     "gaps": "暂无视频。"
@@ -248,7 +248,7 @@
       }
     ],
     "pitfalls": ["CPU 利用率高就断言 CPU 瓶颈（可能是锁或 I/O 等待）"],
-    "question_ids": ["KP-19"],
+    "question_ids": ["KP-19", "KP-X04"],
     "lab_ids": [],
     "search_terms": ["perf record report 热点", "性能分析 火焰图"],
     "gaps": "暂无视频。"
@@ -300,7 +300,7 @@
       }
     ],
     "pitfalls": ["把 BoostKit 当成一个具体软件", "不考虑版本与硬件条件就断言加速生效"],
-    "question_ids": ["KP-23"],
+    "question_ids": ["KP-23", "KP-X05"],
     "lab_ids": [],
     "search_terms": ["KAE 鲲鹏 加速", "BoostKit 场景"],
     "gaps": "暂无视频。"

@@ -189,7 +189,7 @@
       }
     ],
     "pitfalls": ["认为索引越多越好（写入与空间成本）", "只看“是否走索引”不看扫描行数"],
-    "question_ids": ["OG-18"],
+    "question_ids": ["OG-18", "OG-X01"],
     "lab_ids": [],
     "search_terms": ["openGauss 组合索引 最左前缀"],
     "gaps": "暂无视频。"
@@ -237,7 +237,7 @@
       }
     ],
     "pitfalls": ["认为列存在所有 OLTP 场景都更快"],
-    "question_ids": ["OG-21"],
+    "question_ids": ["OG-21", "OG-X02"],
     "lab_ids": [],
     "search_terms": ["openGauss 行存 列存 区别"],
     "gaps": "暂无视频。"
@@ -319,7 +319,7 @@
       }
     ],
     "pitfalls": ["把全密态、TLS 传输加密、磁盘加密混成一件事", "以为 gsql 不加 -C 也能做全密态操作"],
-    "question_ids": ["OG-27"],
+    "question_ids": ["OG-27", "OG-X03"],
     "lab_ids": [],
     "search_terms": ["openGauss 全密态 CMK CEK"],
     "gaps": "暂无视频，密钥链以官方文档为准。"
@@ -339,7 +339,7 @@
       }
     ],
     "pitfalls": ["认为账本能提供数据保密性（那是加密的事）"],
-    "question_ids": ["OG-28"],
+    "question_ids": ["OG-28", "OG-X04"],
     "lab_ids": [],
     "search_terms": ["openGauss 账本 防篡改 ledger"],
     "gaps": "暂无视频。"
