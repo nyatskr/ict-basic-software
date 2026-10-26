@@ -337,7 +337,7 @@
       "在 cron 里依赖 `~/.bashrc` 里设置的 PATH"
     ],
     "question_ids": ["OE-15", "OE-X06"],
-    "lab_ids": [],
+    "lab_ids": ["oe-lab-cron-01"],
     "search_terms": ["crontab 五个字段", "linux 定时任务"],
     "gaps": "主视频 16:37 偏长，时间紧时看补充那条。"
   },

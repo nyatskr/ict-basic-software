@@ -310,6 +310,55 @@
     return cur.st.services[name] ? name : cur.st.services[name + '.service'] ? name + '.service' : name;
   }
 
+  /* ---------------- 计划任务 ---------------- */
+
+  /* 把 crontab 文本切成任务行。
+   * 用户 crontab 是「五字段 + 命令」，/etc/cron.d/* 是「五字段 + 用户 + 命令」——
+   * 这个差异是 cron 最常踩的坑：把五字段的行贴进 cron.d，crond 会把命令名当用户名，
+   * 日志里报 ORPHAN (no passwd entry)，任务永远不跑。所以解析必须按来源区分 six。
+   */
+  function cronJobs(text, six) {
+    const jobs = [];
+    String(text || '')
+      .split('\n')
+      .forEach((raw) => {
+        const line = raw.trim();
+        if (!line || line.startsWith('#')) return;
+        if (/^[A-Za-z_][A-Za-z0-9_]*\s*=/.test(line)) return; // SHELL= / MAILTO= 这类环境行
+        const f = line.split(/\s+/);
+        const need = six ? 7 : 6;
+        if (f.length < need) {
+          jobs.push({ line, fields: f, user: null, cmd: '', bad: true });
+          return;
+        }
+        jobs.push({
+          line,
+          fields: f.slice(0, 5),
+          user: six ? f[5] : null,
+          cmd: f.slice(six ? 6 : 5).join(' '),
+          bad: false,
+        });
+      });
+    return jobs;
+  }
+
+  /* 校验器的值可能是 spool 数组，也可能是 /etc/cron.d/* 的文件内容字符串 */
+  function cronText(val) {
+    if (Array.isArray(val)) return val.join('\n');
+    return typeof val === 'string' ? val : '';
+  }
+
+  function cronSix(v) {
+    return String((v.path || []).join('/')).indexOf('/etc/cron.d/') >= 0;
+  }
+
+  function cronMatches(j, want) {
+    if (j.bad) return false;
+    if (want.minute && j.fields[0] !== want.minute) return false;
+    if (want.user && j.user !== want.user) return false;
+    return (want.cmd_has || []).every((s) => j.cmd.indexOf(s) >= 0);
+  }
+
   function lvDev(name) {
     const n = String(name || '').replace(/^\/dev\//, '').replace(/^mapper\//, '');
     if (cur.st.lvs[n]) return n;
@@ -1234,6 +1283,69 @@
           return out;
         }
 
+        case 'crontab': {
+          if (!st.cron) return [err('crontab: 这个实验没有计划任务状态')];
+          const spool = (st.cron.spool = st.cron.spool || {});
+
+          // -u 后面跟用户名；剩下的才算位置参数（可以是文件）
+          const pos = [];
+          let asUser = null;
+          for (let i = 0; i < args.length; i++) {
+            if (args[i] === '-u') { asUser = args[i + 1]; i++; continue; }
+            pos.push(args[i]);
+          }
+          const who = asUser || st.user;
+          if (asUser && !needRoot()) return out;
+          if (!st.users[who]) return [err('crontab: 用户 ' + who + ' 不存在')];
+
+          const mine = spool[who] || [];
+
+          if (pos.indexOf('-l') >= 0) {
+            if (!mine.length) return [err('no crontab for ' + who)];
+            mine.forEach((l) => out.push(ok(l)));
+            return out;
+          }
+
+          if (pos.indexOf('-r') >= 0) {
+            delete spool[who];
+            out.push(dim('（已删除 ' + who + ' 的全部计划任务）'));
+            return out;
+          }
+
+          if (pos.indexOf('-e') >= 0) {
+            return [err('crontab: 本模拟不支持交互编辑器；把内容写进文件，再执行 crontab <文件>')];
+          }
+
+          const file = pos.find((a) => a.charAt(0) !== '-');
+          if (!file) return [err('crontab: 用法 crontab -l | -r | -e | <文件>')];
+          const fp = normalize(file, st.cwd);
+          const f = st.files[fp];
+          if (!f) return [err('crontab: ' + file + ': No such file or directory')];
+          if (f.type === 'dir') return [err('crontab: ' + file + ': Is a directory')];
+
+          const lines = String(f.content || '').split('\n').map((l) => l.replace(/\s+$/, ''));
+          while (lines.length && !lines[lines.length - 1]) lines.pop();
+
+          // 真 crontab 会先做语法检查，有错就整份不装 —— 这里也照做
+          const badLine = lines.findIndex((l) => {
+            const t = l.trim();
+            if (!t || t.startsWith('#')) return false;
+            if (/^[A-Za-z_][A-Za-z0-9_]*\s*=/.test(t)) return false;
+            return t.split(/\s+/).length < 6;
+          });
+          if (badLine >= 0) {
+            out.push(err('"' + file + '":' + (badLine + 1) + ': bad command'));
+            out.push(err('errors in crontab file, can\'t install.'));
+            out.push(dim('（每行至少要有「分 时 日 月 周」五个时间字段，后面再跟命令）'));
+            return out;
+          }
+
+          spool[who] = lines;
+          const n = cronJobs(lines.join('\n'), false).length;
+          out.push(dim('（已用 ' + file + ' 覆盖 ' + who + ' 的 crontab：' + n + ' 条任务）'));
+          return out;
+        }
+
         case 'firewall-cmd': {
           const fw = st.firewall;
           const perm = args.indexOf('--permanent') >= 0;
@@ -1887,6 +1999,15 @@
       case 'lacks':
         // 数组里不能有某个值（例如内核地址里不能残留旧 IP）
         return Array.isArray(val) && val.indexOf(v.value) < 0;
+      case 'cron_has':
+        // val 是 spool 行数组或 cron.d 文件内容；value = { minute?, user?, cmd_has? }
+        return cronJobs(cronText(val), cronSix(v)).some((j) => cronMatches(j, v.value));
+      case 'cron_absent':
+        // 旧任务必须清掉：不能有任何一条命中 cmd_has
+        return !cronJobs(cronText(val), cronSix(v)).some((j) => cronMatches(j, v.value));
+      case 'cron_count':
+        // 任务条数（字段不足的坏行不计）
+        return cronJobs(cronText(val), cronSix(v)).filter((j) => !j.bad).length === Number(v.value);
       case 'same_inode': {
         // v.path 指向某个文件的 inode，v.value 是另一个路径；两者必须是同一 inode 的普通文件
         const a = v.path[1];
@@ -2038,6 +2159,32 @@
         return { k: n, v: p.version, sub: (p.files || []).length + ' 个文件 · ' + (p.repo || '@System') };
       });
       groups.push({ title: '已装软件包', rows: rows.length ? rows : [{ k: '（无）', v: '', cls: 'bad' }] });
+    }
+    if (st.cron) {
+      // 计划任务分两个来源：crontab 的 spool（只能通过 crontab 改）与 /etc/cron.d/*（普通文件）。
+      // 面板只如实列出行，不判断格式对不对 —— 六字段的坑要自己数，或者去 /var/log/cron 找 ORPHAN。
+      const rows = [];
+      Object.keys(st.cron.spool || {}).forEach((u) => {
+        const lines = (st.cron.spool[u] || []).filter((l) => l.trim());
+        rows.push({
+          k: 'crontab ' + u,
+          v: cronJobs(lines.join('\n'), false).length + ' 条任务',
+          sub: lines.join(' | ') || '（空）',
+          cls: lines.length ? 'ok' : '',
+        });
+      });
+      Object.keys(st.files)
+        .filter((p) => p.indexOf('/etc/cron.d/') === 0 && st.files[p].type === 'file')
+        .forEach((p) => {
+          const lines = String(st.files[p].content || '').split('\n').filter((l) => l.trim());
+          rows.push({
+            k: p,
+            v: cronJobs(lines.join('\n'), true).length + ' 条任务',
+            sub: lines.join(' | ') || '（空）',
+            cls: lines.length ? 'ok' : '',
+          });
+        });
+      groups.push({ title: '计划任务', rows: rows.length ? rows : [{ k: '（无）', v: '', cls: 'bad' }] });
     }
     if (Object.keys(st.services).length) {
       groups.push({

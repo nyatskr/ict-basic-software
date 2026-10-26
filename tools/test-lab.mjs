@@ -581,6 +581,100 @@ const PKG_CASES = [
   },
 ];
 
+/* oe-lab-cron-01：crontab 是整份覆盖，/etc/cron.d 的行比用户 crontab 多一个用户字段 */
+const CRON_LAB = 'oe-lab-cron-01';
+const CRON_JOB = "echo '*/5 * * * * /usr/local/bin/backup.sh >> /var/log/backup.log 2>&1' > /root/c.txt";
+const CRON_HEALTH = "echo '*/30 * * * * /usr/local/bin/health.sh' >> /root/c.txt";
+const CRON_INSTALL = 'crontab /root/c.txt';
+const CRON_FIX_D = "echo '*/10 * * * * root /opt/app/clean.sh' > /etc/cron.d/app";
+const CRON_ON = 'systemctl enable --now crond.service';
+const CRON_CASES = [
+  {
+    name: '初始 crontab 有 2 条任务',
+    cmds: [],
+    probe: `return E.cur().st.cron.spool.root.filter((l) => l && l.indexOf('=') < 0).length;`,
+    want: 2,
+  },
+  {
+    name: '初始 crond 没在跑',
+    cmds: [],
+    probe: `return E.exec('systemctl is-active crond').filter((o) => !o.cls).map((o) => o.text).join('');`,
+    want: 'inactive',
+  },
+  {
+    name: 'enable --now 同时 active + enabled',
+    cmds: [CRON_ON],
+    probe: `
+      const s = E.cur().st.services['crond.service'];
+      return (s.active ? 'active' : 'inactive') + '/' + (s.enabled ? 'enabled' : 'disabled');`,
+    want: 'active/enabled',
+  },
+  {
+    name: '/var/log/cron 里有 ORPHAN 线索',
+    cmds: [],
+    probe: `return E.exec('cat /var/log/cron').some((o) => o.text.indexOf('ORPHAN') >= 0) ? 'yes' : 'no';`,
+    want: 'yes',
+  },
+  {
+    name: 'cron.d 的五字段行解析不出用户',
+    cmds: [],
+    probe: `return E.check().items.filter((i) => i.id === 'v6')[0].pass ? 'pass' : 'fail';`,
+    want: 'fail',
+  },
+  {
+    name: 'crontab <文件> 是整份覆盖',
+    cmds: [CRON_JOB, CRON_INSTALL],
+    probe: `return E.cur().st.cron.spool.root.length;`,
+    want: 1,
+  },
+  {
+    name: '五字段的行装不进 crontab',
+    cmds: ["echo '*/5 * * * *' > /root/bad.txt"],
+    probe: `
+      const out = E.exec('crontab /root/bad.txt');
+      const bad = out.some((o) => o.cls === 'err' && o.text.indexOf("can't install") >= 0);
+      return (bad ? 'rejected' : 'accepted') + '/' + E.cur().st.cron.spool.root.length;`,
+    want: 'rejected/4',
+  },
+  {
+    name: 'crontab -r 清空后再 -l 报 no crontab',
+    cmds: ['crontab -r'],
+    probe: `return E.exec('crontab -l').some((o) => o.text.indexOf('no crontab') >= 0) ? 'empty' : 'has';`,
+    want: 'empty',
+  },
+  {
+    name: 'crontab -e 明确拒绝',
+    cmds: [],
+    probe: `return E.exec('crontab -e').some((o) => o.cls === 'err' && o.text.indexOf('不支持交互编辑器') >= 0) ? 'rejected' : 'opened';`,
+    want: 'rejected',
+  },
+  {
+    name: '满分：起 crond + 覆盖 crontab + 修 cron.d',
+    cmds: [CRON_ON, CRON_JOB, CRON_HEALTH, CRON_INSTALL, CRON_FIX_D],
+    score: 100,
+  },
+  {
+    name: '忘了起 crond，扣 30',
+    cmds: [CRON_JOB, CRON_HEALTH, CRON_INSTALL, CRON_FIX_D],
+    score: 70,
+  },
+  {
+    name: '覆盖时把 health.sh 冲掉，扣 10',
+    cmds: [CRON_ON, CRON_JOB, CRON_INSTALL, CRON_FIX_D],
+    score: 90,
+  },
+  {
+    name: 'cron.d 没修，扣 20',
+    cmds: [CRON_ON, CRON_JOB, CRON_HEALTH, CRON_INSTALL],
+    score: 80,
+  },
+  {
+    name: '忘了删 purge.sh，扣 15',
+    cmds: [CRON_ON, CRON_JOB, CRON_HEALTH, "echo '0 3 * * * /opt/old/purge.sh' >> /root/c.txt", CRON_INSTALL, CRON_FIX_D],
+    score: 85,
+  },
+];
+
 async function main() {
   const only = process.argv[2];
   await sleep(800);
@@ -687,6 +781,23 @@ async function main() {
         const E = LP.labEngine;
         E.reset();
         E.open(${JSON.stringify(PKG_LAB)});
+        for (const cmd of ${JSON.stringify(c.cmds)}) E.exec(cmd);
+        ${c.score !== undefined ? 'return E.check().score;' : c.probe}
+      })()`);
+      const want = c.score !== undefined ? c.score : c.want;
+      const ok = got === want;
+      if (!ok) bad++;
+      console.log(`${ok ? 'ok  ' : 'FAIL'}  ${c.name.padEnd(30)} ${String(got)}  期望 ${String(want)}`);
+    }
+  }
+
+  if (!only || only === 'cron') {
+    console.log('\n== 计划任务（' + CRON_LAB + '）');
+    for (const c of CRON_CASES) {
+      const got = await evalJs(`(() => {
+        const E = LP.labEngine;
+        E.reset();
+        E.open(${JSON.stringify(CRON_LAB)});
         for (const cmd of ${JSON.stringify(c.cmds)}) E.exec(cmd);
         ${c.score !== undefined ? 'return E.check().score;' : c.probe}
       })()`);

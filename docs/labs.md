@@ -21,6 +21,7 @@
 | `oe-lab-files-01` | 日志留存：硬链接、软链接与归档 | openEuler | 终端 | L2 状态实验 | 5 | 80 |
 | `oe-lab-net-01` | 换静态地址，再确认端口在监听 | openEuler | 终端 | L2 状态实验 | 6 | 80 |
 | `oe-lab-pkg-01` | 装一个包，再把它的文件找回来 | openEuler | 终端 | L2 状态实验 | 5 | 80 |
+| `oe-lab-cron-01` | 定时备份：两个来源，一处格式差异 | openEuler | 终端 | L2 状态实验 | 6 | 80 |
 
 ## 协作目录：用户、组与权限（`oe-lab-perm-01`）
 
@@ -433,5 +434,56 @@ rpm -qf /etc/nginx/nginx.conf
 rpm -ql nginx-core
 dnf remove httpd-tools
 rpm -qa
+```
+
+## 定时备份：两个来源，一处格式差异（`oe-lab-cron-01`）
+
+- 类型：终端 · 层级：L2 状态实验 · 建议 15 分钟
+- 适用版本：openEuler 24.03-LTS-SP2
+- 归属：openEuler / oe-03 / oe-03-03 cron 计划任务
+
+**场景**：运维交接：/usr/local/bin/backup.sh 要改成每 5 分钟跑一次，输出追加到 /var/log/backup.log；root 的 crontab 里还留着一条早该下线的 purge.sh 任务，但 health.sh 的巡检必须保住。另外 /etc/cron.d/app 那条清理任务「配了却从来没跑过」，/var/log/cron 里有线索。
+
+**这一题要练**
+
+- 分清 crontab 的 spool 与 /etc/cron.d 下的普通文件，知道各自怎么改
+- 用 crontab <文件> 整体覆盖，而不是往 spool 里追加
+- 认出 /etc/cron.d 的行比用户 crontab 多一个用户字段
+
+**任务**
+
+1. 让 crond 现在就跑起来，并且开机自启
+2. 给 root 加一条每 5 分钟的备份任务，日志追加到 /var/log/backup.log；同时清掉 purge.sh，保住 health.sh
+3. 查清 /etc/cron.d/app 为什么不执行，把它修成能跑的形式
+
+**校验项（合计 100 分）**
+
+| 校验项 | 判据 | 分值 |
+| --- | --- | --- |
+| crond 正在运行 | `services.crond.service.active` == `True` | 15 |
+| crond 已设为开机自启 | `services.crond.service.enabled` == `True` | 15 |
+| root 的 crontab 里有每 5 分钟的备份任务，日志追加到 /var/log/backup.log | `cron.spool.root` cron_has {'minute': '*/5', 'cmd_has': ['backup.sh', '>>', '/var/log/backup.log']} | 25 |
+| 旧的 purge.sh 任务已清掉 | `cron.spool.root` cron_absent {'cmd_has': ['purge.sh']} | 15 |
+| health.sh 的巡检任务还在（覆盖 crontab 时没被一起冲掉） | `cron.spool.root` cron_has {'minute': '*/30', 'cmd_has': ['health.sh']} | 10 |
+| /etc/cron.d/app 已补上用户字段，user=root | `files./etc/cron.d/app.content` cron_has {'minute': '*/10', 'user': 'root', 'cmd_has': ['clean.sh']} | 20 |
+
+**提示（可在页面逐条展开）**
+
+- 任务写好了但 `crond` 没开，一样不会执行：先 `systemctl enable --now crond.service`。
+- `crontab <文件>` 是**整份覆盖**，不是追加。所以文件里要同时写上备份任务和 health.sh 那行。
+- `/etc/cron.d` 下的行是「分 时 日 月 周 **用户** 命令」，比用户 crontab 多一个用户字段；少了它 crond 会把命令名当用户名，日志报 ORPHAN。
+
+**参考解法（只是一种写法）**
+
+```bash
+cat /var/log/cron
+systemctl enable --now crond.service
+crontab -l
+echo '*/5 * * * * /usr/local/bin/backup.sh >> /var/log/backup.log 2>&1' > /root/cron.txt
+echo '*/30 * * * * /usr/local/bin/health.sh' >> /root/cron.txt
+crontab /root/cron.txt
+crontab -l
+echo '*/10 * * * * root /opt/app/clean.sh' > /etc/cron.d/app
+cat /etc/cron.d/app
 ```
 

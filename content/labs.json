@@ -1122,5 +1122,321 @@
       "mounts": {},
       "fstab": []
     }
+  },
+  {
+    "id": "oe-lab-cron-01",
+    "kind": "linux",
+    "mode": "state-sim",
+    "level": "L2",
+    "title": "定时备份：两个来源，一处格式差异",
+    "subtitle": "crontab 整体覆盖 vs /etc/cron.d 的六字段",
+    "domain": "oe",
+    "topic_id": "oe-03",
+    "section_id": "oe-03-03",
+    "version": "openEuler 24.03-LTS-SP2",
+    "minutes": 15,
+    "scenario": "运维交接：/usr/local/bin/backup.sh 要改成每 5 分钟跑一次，输出追加到 /var/log/backup.log；root 的 crontab 里还留着一条早该下线的 purge.sh 任务，但 health.sh 的巡检必须保住。另外 /etc/cron.d/app 那条清理任务「配了却从来没跑过」，/var/log/cron 里有线索。",
+    "objectives": [
+      "分清 crontab 的 spool 与 /etc/cron.d 下的普通文件，知道各自怎么改",
+      "用 crontab <文件> 整体覆盖，而不是往 spool 里追加",
+      "认出 /etc/cron.d 的行比用户 crontab 多一个用户字段"
+    ],
+    "tasks": [
+      {
+        "id": "t1",
+        "text": "让 crond 现在就跑起来，并且开机自启"
+      },
+      {
+        "id": "t2",
+        "text": "给 root 加一条每 5 分钟的备份任务，日志追加到 /var/log/backup.log；同时清掉 purge.sh，保住 health.sh"
+      },
+      {
+        "id": "t3",
+        "text": "查清 /etc/cron.d/app 为什么不执行，把它修成能跑的形式"
+      }
+    ],
+    "validators": [
+      {
+        "id": "v1",
+        "label": "crond 正在运行",
+        "weight": 15,
+        "path": [
+          "services",
+          "crond.service",
+          "active"
+        ],
+        "op": "eq",
+        "value": true
+      },
+      {
+        "id": "v2",
+        "label": "crond 已设为开机自启",
+        "weight": 15,
+        "path": [
+          "services",
+          "crond.service",
+          "enabled"
+        ],
+        "op": "eq",
+        "value": true
+      },
+      {
+        "id": "v3",
+        "label": "root 的 crontab 里有每 5 分钟的备份任务，日志追加到 /var/log/backup.log",
+        "weight": 25,
+        "path": [
+          "cron",
+          "spool",
+          "root"
+        ],
+        "op": "cron_has",
+        "value": {
+          "minute": "*/5",
+          "cmd_has": [
+            "backup.sh",
+            ">>",
+            "/var/log/backup.log"
+          ]
+        }
+      },
+      {
+        "id": "v4",
+        "label": "旧的 purge.sh 任务已清掉",
+        "weight": 15,
+        "path": [
+          "cron",
+          "spool",
+          "root"
+        ],
+        "op": "cron_absent",
+        "value": {
+          "cmd_has": [
+            "purge.sh"
+          ]
+        }
+      },
+      {
+        "id": "v5",
+        "label": "health.sh 的巡检任务还在（覆盖 crontab 时没被一起冲掉）",
+        "weight": 10,
+        "path": [
+          "cron",
+          "spool",
+          "root"
+        ],
+        "op": "cron_has",
+        "value": {
+          "minute": "*/30",
+          "cmd_has": [
+            "health.sh"
+          ]
+        }
+      },
+      {
+        "id": "v6",
+        "label": "/etc/cron.d/app 已补上用户字段，user=root",
+        "weight": 20,
+        "path": [
+          "files",
+          "/etc/cron.d/app",
+          "content"
+        ],
+        "op": "cron_has",
+        "value": {
+          "minute": "*/10",
+          "user": "root",
+          "cmd_has": [
+            "clean.sh"
+          ]
+        }
+      }
+    ],
+    "hints": [
+      {
+        "text": "任务写好了但 `crond` 没开，一样不会执行：先 `systemctl enable --now crond.service`。",
+        "cost": 5
+      },
+      {
+        "text": "`crontab <文件>` 是**整份覆盖**，不是追加。所以文件里要同时写上备份任务和 health.sh 那行。",
+        "cost": 5
+      },
+      {
+        "text": "`/etc/cron.d` 下的行是「分 时 日 月 周 **用户** 命令」，比用户 crontab 多一个用户字段；少了它 crond 会把命令名当用户名，日志报 ORPHAN。",
+        "cost": 5
+      }
+    ],
+    "solution": [
+      "cat /var/log/cron",
+      "systemctl enable --now crond.service",
+      "crontab -l",
+      "echo '*/5 * * * * /usr/local/bin/backup.sh >> /var/log/backup.log 2>&1' > /root/cron.txt",
+      "echo '*/30 * * * * /usr/local/bin/health.sh' >> /root/cron.txt",
+      "crontab /root/cron.txt",
+      "crontab -l",
+      "echo '*/10 * * * * root /opt/app/clean.sh' > /etc/cron.d/app",
+      "cat /etc/cron.d/app"
+    ],
+    "initial_state": {
+      "host": "euler01",
+      "user": "root",
+      "cwd": "/root",
+      "umask": "022",
+      "users": {
+        "root": {
+          "uid": 0,
+          "groups": [
+            "root"
+          ],
+          "home": "/root",
+          "shell": "/bin/bash"
+        }
+      },
+      "groups": {
+        "root": {
+          "gid": 0
+        }
+      },
+      "files": {
+        "/": {
+          "type": "dir",
+          "owner": "root",
+          "group": "root",
+          "mode": "755"
+        },
+        "/root": {
+          "type": "dir",
+          "owner": "root",
+          "group": "root",
+          "mode": "755"
+        },
+        "/etc": {
+          "type": "dir",
+          "owner": "root",
+          "group": "root",
+          "mode": "755"
+        },
+        "/etc/fstab": {
+          "type": "file",
+          "owner": "root",
+          "group": "root",
+          "mode": "644",
+          "content": "UUID=1f2a-3c4d / xfs defaults 0 0\n"
+        },
+        "/etc/cron.d": {
+          "type": "dir",
+          "owner": "root",
+          "group": "root",
+          "mode": "755"
+        },
+        "/etc/cron.d/app": {
+          "type": "file",
+          "owner": "root",
+          "group": "root",
+          "mode": "644",
+          "content": "*/10 * * * * /opt/app/clean.sh\n"
+        },
+        "/opt": {
+          "type": "dir",
+          "owner": "root",
+          "group": "root",
+          "mode": "755"
+        },
+        "/opt/app": {
+          "type": "dir",
+          "owner": "root",
+          "group": "root",
+          "mode": "755"
+        },
+        "/opt/app/clean.sh": {
+          "type": "file",
+          "owner": "root",
+          "group": "root",
+          "mode": "755",
+          "content": "#!/bin/bash\nfind /opt/app/tmp -type f -mtime +7 -delete\n"
+        },
+        "/usr": {
+          "type": "dir",
+          "owner": "root",
+          "group": "root",
+          "mode": "755"
+        },
+        "/usr/local": {
+          "type": "dir",
+          "owner": "root",
+          "group": "root",
+          "mode": "755"
+        },
+        "/usr/local/bin": {
+          "type": "dir",
+          "owner": "root",
+          "group": "root",
+          "mode": "755"
+        },
+        "/usr/local/bin/backup.sh": {
+          "type": "file",
+          "owner": "root",
+          "group": "root",
+          "mode": "755",
+          "content": "#!/bin/bash\ntar -czf /var/backups/app-$(date +%F).tgz /opt/app\n"
+        },
+        "/usr/local/bin/health.sh": {
+          "type": "file",
+          "owner": "root",
+          "group": "root",
+          "mode": "755",
+          "content": "#!/bin/bash\ncurl -fsS http://127.0.0.1:8080/health || systemctl restart app\n"
+        },
+        "/var": {
+          "type": "dir",
+          "owner": "root",
+          "group": "root",
+          "mode": "755"
+        },
+        "/var/log": {
+          "type": "dir",
+          "owner": "root",
+          "group": "root",
+          "mode": "755"
+        },
+        "/var/log/cron": {
+          "type": "file",
+          "owner": "root",
+          "group": "root",
+          "mode": "644",
+          "content": "Oct 26 03:00:01 euler01 crond[812]: (root) CMD (/usr/local/bin/health.sh)\nOct 26 03:10:01 euler01 crond[812]: (root) CMD (/usr/local/bin/health.sh)\nOct 26 03:10:01 euler01 crond[812]: (/etc/cron.d/app) ORPHAN (no passwd entry)\nOct 26 03:20:01 euler01 crond[812]: (root) CMD (/usr/local/bin/health.sh)\nOct 26 03:20:01 euler01 crond[812]: (/etc/cron.d/app) ORPHAN (no passwd entry)\n"
+        },
+        "/var/log/backup.log": {
+          "type": "file",
+          "owner": "root",
+          "group": "root",
+          "mode": "644",
+          "content": ""
+        }
+      },
+      "services": {
+        "crond.service": {
+          "active": false,
+          "enabled": false,
+          "desc": "Periodic Command Scheduler"
+        }
+      },
+      "firewall": null,
+      "cron": {
+        "spool": {
+          "root": [
+            "SHELL=/bin/bash",
+            "MAILTO=\"\"",
+            "0 3 * * * /opt/old/purge.sh",
+            "*/30 * * * * /usr/local/bin/health.sh"
+          ]
+        }
+      },
+      "disks": {},
+      "pvs": {},
+      "vgs": {},
+      "lvs": {},
+      "mounts": {},
+      "fstab": []
+    }
   }
 ]
