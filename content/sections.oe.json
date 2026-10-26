@@ -2,38 +2,74 @@
   {
     "id": "oe-01-01",
     "topic_id": "oe-01",
-    "title": "链接、查找、归档与重定向",
+    "title": "路径、链接与查找",
     "status": "draft",
-    "minutes": 12,
+    "minutes": 18,
     "objectives": [
+      "分清绝对路径与相对路径，说清通配符由谁展开、什么时候会出错",
       "说清硬链接与软链接在 inode、跨文件系统、失效行为上的差别",
-      "用 find 按类型与大小定位文件，并区分它与 grep 的分工",
-      "用 tar 打包/解包，知道 -t 只列不解",
-      "分清 > >> 2> 与 2>&1 的作用对象"
+      "用 find 按类型、名称与大小定位文件，并区分它与 grep 的分工"
     ],
-    "resources": ["v-file-hardlink", "v-file-tar", "v-file-find", "a-file-find", "v-file-redirect", "v-file-2to1"],
+    "resources": ["v-file-hardlink", "v-file-find", "a-file-find", "a-file-link-tc"],
+    "notes": [
+      {
+        "h": "通配符是 shell 展开的，不是命令自己看的",
+        "t": "`*`、`?`、`[]` 属于 shell 的通配符，在命令启动前就展开成文件名列表。所以 `find /var/log -name *.log` 会把当前目录的匹配结果塞进参数，`-name` 后面多出几个文件名，find 直接报 `paths must precede expression`。当前目录没有匹配时 bash 默认原样传递，于是“碰巧能用”——这类问题只在特定目录下复现。加引号或反斜杠，把模式交给 find 自己解释。"
+      },
+      {
+        "h": "硬链接为什么不能跨文件系统",
+        "t": "硬链接是同一个 inode 的另一个目录项，inode 号由文件系统自己分配，所以不能跨文件系统，通常也不对目录创建。软链接保存的是路径字符串，可以跨文件系统。删除原文件后硬链接仍可访问数据（链接数减 1），软链接则变成悬空链接。`ln -s` 的源写相对路径时，相对的是链接所在目录而不是当前目录，这是最容易踩的坑。"
+      },
+      {
+        "h": "find 的 -size 与 -mtime 都是取整后比较",
+        "t": "`-size +100M` 表示大于 100 MiB，`-size -100M` 表示小于；单位 `M` 是 1048576 字节，`k` 是 1024 字节。`-mtime n` 按 24 小时整数天取整，`-mtime -1` 是“不足 1 天”而不是“今天”，要精确到分钟用 `-mmin`。"
+      }
+    ],
+    "pitfalls": [
+      "`find -size +100M` 的 `+` 是“大于”、`-` 是“小于”，漏掉符号含义最容易选错",
+      "`find ... -name *.log` 不给模式加引号，当前目录有匹配文件时命令直接失败",
+      "把 `grep -R` 当成能按文件大小筛选的工具"
+    ],
+    "question_ids": ["OE-07", "OE-08", "OE-X10"],
+    "lab_ids": ["oe-lab-files-01"],
+    "search_terms": ["linux 硬链接 软链接", "linux find 命令", "linux 通配符 引号"],
+    "gaps": "find 的 -mtime 取整规则与 -size 单位没有专门短视频，靠补充图文与本站说明；路径与通配符只有图文资料，没有合适视频。"
+  },
+  {
+    "id": "oe-01-02",
+    "topic_id": "oe-01",
+    "title": "归档与重定向",
+    "status": "draft",
+    "minutes": 15,
+    "objectives": [
+      "用 tar 打包与解包，知道 -t 只列不解、-C 指定解包目录",
+      "分清 > >> 2> 与 2>&1 各自作用在哪个文件描述符上",
+      "说清重定向的书写顺序为什么会影响结果"
+    ],
+    "resources": ["v-file-tar", "v-file-redirect", "v-file-2to1", "a-redirect-aliyun"],
     "notes": [
       {
         "h": "版本提示：GNU tar 的 -z 只是调用 gzip",
         "t": "openEuler 自带 GNU tar，`-czf`/`-xzf` 与老题写法一致。但 `--format`、`--zstd`、`--selinux` 等选项随版本增加，考试环境先 `tar --help` 确认。归档后若 SELinux 上下文丢失，需要 `restorecon` 修回，而不是关 SELinux。"
       },
       {
-        "h": "硬链接为什么不能跨文件系统",
-        "t": "硬链接是同一个 inode 的另一个目录项，inode 号由文件系统自己分配，所以不能跨文件系统，通常也不对目录创建。软链接保存的是路径字符串，可以跨文件系统。删除原文件后硬链接仍可访问数据（链接数减 1），软链接则变成悬空链接。"
-      },
-      {
         "h": "2>&1 不会自己产生文件",
         "t": "`2>&1` 只表示“让 stderr 指向当前 stdout 所在的位置”，stdout 去哪取决于其他重定向。`cmd 2>&1 > out` 与 `cmd > out 2>&1` 结果不同：前者 stderr 仍指向终端，因为 `2>&1` 在 stdout 改向之前就复制了旧目标。"
+      },
+      {
+        "h": "-t 只列不解，先看再解",
+        "t": "`tar -tzf pkg.tar.gz` 只列出内容，不改动文件系统；确认路径后再 `tar -xzf pkg.tar.gz -C /opt`。不加 `-C` 会解到当前目录，覆盖同名文件且不提示。"
       }
     ],
     "pitfalls": [
-      "`find -size +100M` 的 `+` 是“大于”、`-` 是“小于”，漏掉符号含义最容易选错",
-      "把 `grep -R` 当成能按文件大小筛选的工具"
+      "把 `2>&1 > out` 当成“都写进 out”，实际 stderr 还在终端",
+      "`tar -xzf` 前不先用 `-t` 确认内容，解包覆盖了同名文件",
+      "以为 `>` 和 `>>` 会连 stderr 一起管，忘了 `2>` 要单独写"
     ],
-    "question_ids": ["OE-07", "OE-08", "OE-09", "OE-10"],
-    "lab_ids": [],
-    "search_terms": ["linux 硬链接 软链接", "linux tar gzip", "linux find 命令"],
-    "gaps": "find 的 -mtime 取整规则与 -size 单位没有专门短视频，靠补充图文与本站说明。"
+    "question_ids": ["OE-09", "OE-10"],
+    "lab_ids": ["oe-lab-files-01"],
+    "search_terms": ["linux tar gzip", "linux 重定向 2>&1"],
+    "gaps": "管道与进程替换没有单独小节覆盖，重定向只到文件描述符层面；若考 tee、<( ) 需另找资料。"
   },
   {
     "id": "oe-02-01",

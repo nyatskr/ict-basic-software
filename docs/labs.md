@@ -18,6 +18,7 @@
 | `oe-lab-lvm-01` | LVM 建卷、持久挂载与扩容 | openEuler | 终端 | L2 状态实验 | 7 | 80 |
 | `og-lab-grant-01` | 最小权限授权 | openGauss | SQL 控制台 | L2 状态实验 | 5 | 80 |
 | `kp-lab-scan-01` | 迁移依赖审查：给 6 个组件定处理方式 | 鲲鹏应用开发 | 证据审查 | L1 引导模拟 | 6 | 80 |
+| `oe-lab-files-01` | 日志留存：硬链接、软链接与归档 | openEuler | 终端 | L2 状态实验 | 5 | 80 |
 
 ## 协作目录：用户、组与权限（`oe-lab-perm-01`）
 
@@ -270,5 +271,59 @@ i3 → C：换厂商 AArch64 版 libagent.so
 i4 → C：换 AArch64 基础镜像
 i5 → D：只有 x86_64 构建，需厂商支持或重做
 i6 → A：noarch 与架构无关
+```
+
+## 日志留存：硬链接、软链接与归档（`oe-lab-files-01`）
+
+- 类型：终端 · 层级：L2 状态实验 · 建议 18 分钟
+- 适用版本：openEuler 24.03-LTS-SP2
+- 归属：openEuler / oe-01 / oe-01-01 路径、链接与查找
+
+**场景**：/srv/source 下堆着三个日志，其中 app.log 已经 120 MiB。运维要求：app.log 要在 /srv/keep 下留一份可直接访问的副本；/srv/backup/current 要始终指向 old.log 这个路径；/srv/source 整体归档到 /srv/backup/source.tar.gz。最后 old.log 会被清理掉，你得保证清理之后该留的还在。
+
+**这一题要练**
+
+- 用 find 按类型与大小定位文件，注意 -size 的单位
+- 用 ln 建硬链接，理解它共用 inode、不占额外空间
+- 用 ln -s 建软链接，理解它只保存路径、目标删掉就悬空
+- 用 tar 打包，并知道要在删除前归档
+
+**任务**
+
+1. 用 find 找出 /srv/source 下大于 100 MiB 的普通文件
+2. 在 /srv/keep 下为 app.log 建一个同名硬链接
+3. 在 /srv/backup 下建软链接 current，指向 /srv/source/old.log
+4. 把 /srv/source 打包成 /srv/backup/source.tar.gz（gzip）
+5. 删除 /srv/source/old.log
+6. 验证：cat 硬链接仍有内容；cat 软链接报找不到；tar -tf 归档里 old.log 还在
+
+**校验项（合计 100 分）**
+
+| 校验项 | 判据 | 分值 |
+| --- | --- | --- |
+| /srv/keep/app.log 与 /srv/source/app.log 同 inode | `files./srv/keep/app.log.inode` same_inode /srv/source/app.log | 25 |
+| /srv/backup/current 指向 /srv/source/old.log | `files./srv/backup/current.target` == `/srv/source/old.log` | 20 |
+| 归档里有 old.log（说明是在删除前打包的） | `files./srv/backup/source.tar.gz.entries` archive_has old.log | 20 |
+| /srv/source/old.log 已删除 | `files./srv/source/old.log` absent None | 20 |
+| 硬链接内容仍完整（原文件删了也不影响） | `files./srv/keep/app.log.content` includes disk quota exceeded | 15 |
+
+**提示（可在页面逐条展开）**
+
+- `find /srv/source -type f -size +100M`：`-size` 的 `+` 是大于，单位 `M` 是 MiB。
+- 硬链接：`ln 源文件 链接名`，两个名字共用同一个 inode。
+- 软链接：`ln -s 目标 链接名`，注意参数顺序和硬链接一样是「源在前」。
+- 打包要在删除之前：`tar -czf /srv/backup/source.tar.gz /srv/source`。
+
+**参考解法（只是一种写法）**
+
+```bash
+find /srv/source -type f -size +100M
+ln /srv/source/app.log /srv/keep/app.log
+ln -s /srv/source/old.log /srv/backup/current
+tar -czf /srv/backup/source.tar.gz /srv/source
+rm /srv/source/old.log
+stat /srv/keep/app.log
+cat /srv/backup/current
+tar -tzf /srv/backup/source.tar.gz
 ```
 

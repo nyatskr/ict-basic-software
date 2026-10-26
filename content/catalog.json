@@ -21,6 +21,7 @@
       "tagline": "操作系统基础运维与容器",
       "scope": "发展历程、基础命令、内存管理、进程管理、文件系统（本赛季通知口径）",
       "version": "24.03-LTS-SP2",
+      "question_version": "openEuler 24.03-LTS-SP2",
       "doc": { "label": "openEuler 文档中心", "url": "https://docs.openeuler.org/" }
     },
     {
@@ -31,6 +32,7 @@
       "tagline": "数据库使用、事务与安全",
       "scope": "概述、连接访问、日常使用、集群管理、全密态、账本防篡改、运维监控",
       "version": "7.0 / 5.0 LTS",
+      "question_version": "openGauss 7.0",
       "doc": { "label": "openGauss 文档中心", "url": "https://docs.opengauss.org/" }
     },
     {
@@ -41,6 +43,7 @@
       "tagline": "AArch64 迁移与性能优化",
       "scope": "架构、应用开发、迁移、性能优化、解决方案",
       "version": "Kunpeng DevKit",
+      "question_version": "Kunpeng DevKit / AArch64",
       "doc": { "label": "鲲鹏文档中心", "url": "https://www.hikunpeng.com/zh/document" }
     }
   ],
@@ -53,10 +56,10 @@
       "summary": "路径、通配、重定向、链接、查找与归档：所有后续实验的地基。",
       "nodes": [
         { "label": "绝对/相对路径与通配", "level": 1, "section": "oe-01-01" },
-        { "label": "重定向与管道", "level": 2, "section": "oe-01-01" },
+        { "label": "重定向与管道", "level": 2, "section": "oe-01-02" },
         { "label": "硬链接与软链接", "level": 2, "section": "oe-01-01" },
         { "label": "find / grep 分工", "level": 2, "section": "oe-01-01" },
-        { "label": "tar 归档与压缩", "level": 2, "section": "oe-01-01" }
+        { "label": "tar 归档与压缩", "level": 2, "section": "oe-01-02" }
       ]
     },
     {
@@ -499,6 +502,14 @@
       "covers": ["-size 单位与正负号", "-mtime 取整规则"], "gaps": "中文示例较少",
       "checked_at": "2026-10-26", "note": "正文已读"
     },
+    "a-file-link-tc": {
+      "kind": "article", "platform": "tencent", "title": "【Linux】软硬连接（腾讯云开发者社区）",
+      "author": "腾讯云开发者社区", "url": "https://cloud.tencent.com/developer/article/2431109",
+      "role": "backup", "status": "candidate", "version_note": "通用",
+      "covers": ["硬链接不分配新 inode", "删源文件后硬链接仍可读、引用计数减 1", "软链接保存路径，目标删掉就失效"],
+      "gaps": "不讲 find；「三.软链接」开头一句把软链接写成「通过硬链接」，读到这里别被带偏；没有 ls -l 第二列链接数的读法",
+      "checked_at": "2026-10-26", "note": "备用：正文已读，软硬链接差异讲得清楚，但有上述笔误"
+    },
     "v-file-redirect": {
       "kind": "video", "platform": "bilibili", "title": "Shell 其实很简单（11）深入理解 Shell 中的重定向",
       "author": "张仲恩", "url": "https://www.bilibili.com/video/BV1Hm411m7kP/", "duration": "08:06",
@@ -512,6 +523,14 @@
       "role": "supplement", "status": "candidate", "version_note": "通用",
       "covers": ["2>&1 的指向语义", "与 &> 的区别"], "gaps": "以 nohup 场景切入",
       "checked_at": "2026-10-26", "note": "专门讲清 2>&1 不会自己产生文件"
+    },
+    "a-redirect-aliyun": {
+      "kind": "article", "platform": "aliyun", "title": "详解 Linux 重定向 2>&1 与 &> 的含义和正确顺序",
+      "author": "阿里云开发者社区", "url": "https://developer.aliyun.com/article/977075",
+      "role": "backup", "status": "candidate", "version_note": "通用",
+      "covers": ["0/1/2 文件描述符", "2>&1 为什么必须写在 >log 之后", "2>1 会写成名为 1 的文件", "&> 与 >log 2>&1 等价"],
+      "gaps": "只讲输出重定向，不讲输入重定向与管道；示例是 Java 程序，命令本身与发行版无关",
+      "checked_at": "2026-10-26", "note": "备用：正文已读，2>&1 顺序讲得最清楚，含可复现的验证实验"
     },
     "v-shell-quote": {
       "kind": "video", "platform": "bilibili", "title": "[5 分钟学 linux] 38-自定义变量的 3 种赋值方法及单引号、双引号、无引号的区别",

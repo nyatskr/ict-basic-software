@@ -133,6 +133,21 @@
     "explain": "导入和分块已完成后，召回为空应沿“向量化 → 向量索引 → 检索参数”继续排查。RAG 通过外部知识检索增强生成，不要求为每次知识更新重新训练模型权重。"
   },
   {
+    "id": "OE-X10",
+    "domain": "oe",
+    "kind": "单选",
+    "cluster": "文件、用户与权限",
+    "stem": "在 `/root` 下执行 `find /var/log -name *.log`，而 `/root` 里恰好有几个 `.log` 文件。最可能的结果是：",
+    "options": [
+      { "id": "A", "text": "find 报错 `paths must precede expression`，因为 `*.log` 已被 shell 展开成多个文件名" },
+      { "id": "B", "text": "与加引号时结果完全相同，因为 find 会重新解释这个模式" },
+      { "id": "C", "text": "只搜索 `/root` 下的 `.log` 文件，忽略 `/var/log`" },
+      { "id": "D", "text": "报错 `unknown predicate '-name'`" }
+    ],
+    "answer": ["A"],
+    "explain": "`*` 是 shell 的通配符，在 find 启动前就展开成文件名列表。当前目录有多个匹配时，`-name` 后面会多出参数，GNU find 直接报 `paths must precede expression`；只有一个匹配时不会报错，但模式被换成了那个具体文件名，结果静默出错。加引号或反斜杠转义，把模式交给 find 自己解释。"
+  },
+  {
     "id": "OG-X01",
     "domain": "og",
     "kind": "单选",

@@ -401,5 +401,88 @@
       "i5 → D：只有 x86_64 构建，需厂商支持或重做",
       "i6 → A：noarch 与架构无关"
     ]
+  },
+  {
+    "id": "oe-lab-files-01",
+    "kind": "linux",
+    "mode": "state-sim",
+    "level": "L2",
+    "title": "日志留存：硬链接、软链接与归档",
+    "subtitle": "/srv/source 的日志要留一份、软链一份、再打包",
+    "domain": "oe",
+    "topic_id": "oe-01",
+    "section_id": "oe-01-01",
+    "version": "openEuler 24.03-LTS-SP2",
+    "minutes": 18,
+    "scenario": "/srv/source 下堆着三个日志，其中 app.log 已经 120 MiB。运维要求：app.log 要在 /srv/keep 下留一份可直接访问的副本；/srv/backup/current 要始终指向 old.log 这个路径；/srv/source 整体归档到 /srv/backup/source.tar.gz。最后 old.log 会被清理掉，你得保证清理之后该留的还在。",
+    "objectives": [
+      "用 find 按类型与大小定位文件，注意 -size 的单位",
+      "用 ln 建硬链接，理解它共用 inode、不占额外空间",
+      "用 ln -s 建软链接，理解它只保存路径、目标删掉就悬空",
+      "用 tar 打包，并知道要在删除前归档"
+    ],
+    "tasks": [
+      { "id": "t1", "text": "用 find 找出 /srv/source 下大于 100 MiB 的普通文件" },
+      { "id": "t2", "text": "在 /srv/keep 下为 app.log 建一个同名硬链接" },
+      { "id": "t3", "text": "在 /srv/backup 下建软链接 current，指向 /srv/source/old.log" },
+      { "id": "t4", "text": "把 /srv/source 打包成 /srv/backup/source.tar.gz（gzip）" },
+      { "id": "t5", "text": "删除 /srv/source/old.log" },
+      { "id": "t6", "text": "验证：cat 硬链接仍有内容；cat 软链接报找不到；tar -tf 归档里 old.log 还在" }
+    ],
+    "validators": [
+      { "id": "v1", "label": "/srv/keep/app.log 与 /srv/source/app.log 同 inode", "weight": 25, "path": ["files", "/srv/keep/app.log", "inode"], "op": "same_inode", "value": "/srv/source/app.log" },
+      { "id": "v2", "label": "/srv/backup/current 指向 /srv/source/old.log", "weight": 20, "path": ["files", "/srv/backup/current", "target"], "op": "eq", "value": "/srv/source/old.log" },
+      { "id": "v3", "label": "归档里有 old.log（说明是在删除前打包的）", "weight": 20, "path": ["files", "/srv/backup/source.tar.gz", "entries"], "op": "archive_has", "value": "old.log" },
+      { "id": "v4", "label": "/srv/source/old.log 已删除", "weight": 20, "path": ["files", "/srv/source/old.log"], "op": "absent" },
+      { "id": "v5", "label": "硬链接内容仍完整（原文件删了也不影响）", "weight": 15, "path": ["files", "/srv/keep/app.log", "content"], "op": "includes", "value": "disk quota exceeded" }
+    ],
+    "hints": [
+      { "text": "`find /srv/source -type f -size +100M`：`-size` 的 `+` 是大于，单位 `M` 是 MiB。", "cost": 5 },
+      { "text": "硬链接：`ln 源文件 链接名`，两个名字共用同一个 inode。", "cost": 5 },
+      { "text": "软链接：`ln -s 目标 链接名`，注意参数顺序和硬链接一样是「源在前」。", "cost": 5 },
+      { "text": "打包要在删除之前：`tar -czf /srv/backup/source.tar.gz /srv/source`。", "cost": 5 }
+    ],
+    "solution": [
+      "find /srv/source -type f -size +100M",
+      "ln /srv/source/app.log /srv/keep/app.log",
+      "ln -s /srv/source/old.log /srv/backup/current",
+      "tar -czf /srv/backup/source.tar.gz /srv/source",
+      "rm /srv/source/old.log",
+      "stat /srv/keep/app.log",
+      "cat /srv/backup/current",
+      "tar -tzf /srv/backup/source.tar.gz"
+    ],
+    "initial_state": {
+      "host": "euler01",
+      "user": "root",
+      "cwd": "/root",
+      "umask": "022",
+      "next_inode": 3000,
+      "users": {
+        "root": { "uid": 0, "groups": ["root"], "home": "/root", "shell": "/bin/bash" }
+      },
+      "groups": { "root": { "gid": 0 } },
+      "files": {
+        "/": { "type": "dir", "owner": "root", "group": "root", "mode": "755" },
+        "/root": { "type": "dir", "owner": "root", "group": "root", "mode": "550" },
+        "/etc": { "type": "dir", "owner": "root", "group": "root", "mode": "755" },
+        "/etc/fstab": { "type": "file", "owner": "root", "group": "root", "mode": "644", "content": "UUID=1f2a-3c4d / xfs defaults 0 0\n" },
+        "/srv": { "type": "dir", "owner": "root", "group": "root", "mode": "755" },
+        "/srv/source": { "type": "dir", "owner": "root", "group": "root", "mode": "755" },
+        "/srv/keep": { "type": "dir", "owner": "root", "group": "root", "mode": "755" },
+        "/srv/backup": { "type": "dir", "owner": "root", "group": "root", "mode": "755" },
+        "/srv/source/app.log": { "type": "file", "owner": "root", "group": "root", "mode": "644", "inode": 2001, "size_mb": 120, "content": "2026-10-26 08:12:33 ERROR disk quota exceeded on /srv/source\n" },
+        "/srv/source/access.log": { "type": "file", "owner": "root", "group": "root", "mode": "644", "inode": 2002, "size_mb": 80, "content": "2026-10-26 08:15:02 GET /api/v1/items 200\n" },
+        "/srv/source/old.log": { "type": "file", "owner": "root", "group": "root", "mode": "644", "inode": 2003, "size_mb": 5, "content": "2026-10-25 23:59:59 shutdown requested\n" }
+      },
+      "services": {},
+      "firewall": null,
+      "disks": {},
+      "pvs": {},
+      "vgs": {},
+      "lvs": {},
+      "mounts": {},
+      "fstab": []
+    }
   }
 ]
