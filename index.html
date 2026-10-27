@@ -6,6 +6,14 @@
 <meta name="description" content="华为 ICT 大赛基础软件赛道学习平台：openEuler / openGauss / 鲲鹏应用开发的知识图谱、外部讲解资源、理论题库与模拟实操。">
 <title>基础软件赛道学习平台</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2316181d'/%3E%3Ctext x='32' y='43' font-family='monospace' font-size='26' fill='%237ee0b0' text-anchor='middle'%3E%3E_%3C/text%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#16181d">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon-180.png">
+<!-- iOS 旧版本不认 manifest 的 display，仍靠这两个 meta 起独立窗口 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="基础软件">
+<meta name="mobile-web-app-capable" content="yes">
 <link rel="stylesheet" href="assets/css/base.css">
 <link rel="stylesheet" href="assets/css/app.css">
 </head>
@@ -52,6 +60,10 @@
           <i class="ni"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="7.1" cy="7.1" r="3.7"/><path d="m9.9 9.9 3.2 3.2"/></svg></i>
           <span>题库浏览</span>
         </a>
+        <a href="#/offline" data-nav="offline">
+          <i class="ni"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.4 8.4 13.6 3.6 10.9 13l-2.5-3.2-2.8 1.5.3-3.4z"/></svg></i>
+          <span>离线包</span>
+        </a>
         <a href="#/data" data-nav="data">
           <i class="ni"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3.4 12.6V8.4M8 12.6V3.6M12.6 12.6V6.2"/></svg></i>
           <span>进度与数据</span>
@@ -75,6 +87,8 @@
 <script src="assets/js/core.js"></script>
 <script src="assets/js/lab-engine.js"></script>
 <script src="assets/js/views.js"></script>
+<script src="assets/js/flight-pack.js"></script>
+<script src="assets/js/offline.js"></script>
 <script src="assets/vendor/supabase-js-2.118.0.js"></script>
 <script src="assets/js/cloud-config.js"></script>
 <script src="assets/js/cloud.js"></script>

@@ -28,6 +28,8 @@ import glob
 import json
 import os
 import re
+import subprocess
+import sys
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -317,6 +319,16 @@ def main():
     ):
         p, n = dump(name, var, data)
         print(f"  写入 {os.path.relpath(p, ROOT)}  {n / 1024:.1f} KB")
+
+    # 数据变了，离线缓存的版本号必须跟着变：否则 iPad 上会继续用旧题库，
+    # 而且新旧混用很难排查。构建失败不阻断数据产物，只提示。
+    sw = os.path.join(ROOT, "tools", "build-offline.py")
+    if os.path.isfile(sw):
+        r = subprocess.run([sys.executable, sw], capture_output=True, text=True)
+        if r.returncode == 0:
+            print("  刷新 " + r.stdout.splitlines()[0])
+        else:
+            print("  ! service-worker.js 未刷新：" + (r.stdout + r.stderr).strip())
 
     print("\n构建完成")
     return 0

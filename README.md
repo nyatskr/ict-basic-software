@@ -7,6 +7,9 @@
 
 纯静态站点，无构建依赖、无后端。双击 `index.html` 就能用（`file://` 直接打开，不需要起服务器）。
 
+线上是**可离线启动的网页 App**：iPad 上「添加到主屏幕」后，飞行模式下课程、题库、解析与 10 个模拟实验都能照常用，
+另有 `#/offline`「飞行离线包」按学习顺序管理 32 条 B 站视频的收藏与缓存。见 [docs/offline.md](docs/offline.md)。
+
 | | 地址 |
 | --- | --- |
 | 在线访问 | https://nyatskr.github.io/ict-basic-software/ |
@@ -50,6 +53,15 @@ python tools/check-resources.py
 # 重新生成 docs/ 下的资料台账与实验说明
 python tools/build-docs.py
 
+# 离线能力：重建 Service Worker 预缓存清单（改完任何前端资源都要跑）
+python tools/build-offline.py
+python tools/check-offline.py     # 静态校验：manifest、图标、清单、缓存版本
+node tools/test-offline.mjs       # 运行时回归：断网后启动 / 答题 / 实验 / 外链提示
+
+# 重新生成 PWA 图标（纯标准库，不需要 Pillow）
+python tools/make-icons.py
+python tools/make-icons.py --check
+
 # 实验引擎回归测试（需要本机有 Chrome，或设 CHROME_PATH）
 node tools/test-lab.mjs          # 全部
 node tools/test-lab.mjs chmod    # 只跑 chmod 符号模式
@@ -78,6 +90,7 @@ node tools/test-lab.mjs part     # 只跑分区用例
 | `#/result` | 结果 | 正确率、分域表现、错题回顾 |
 | `#/wrong/weak` `review` `fav` `labs` | 错题与收藏 | 理论错题 / 待复习 / 收藏 / 实验记录 |
 | `#/browse` | 题库浏览 | 按专题与状态筛选、搜索、展开解析 |
+| `#/offline` | 飞行离线包 | 32 条视频按学习顺序排列，收藏/缓存/看完标记，一键跳 B 站 |
 | `#/data` | 进度与数据 | 导入导出、清空、内容台账 |
 
 ### 小节页的固定流程
@@ -190,6 +203,24 @@ covers[] gaps version_note checked_at note
 
 ---
 
+## 离线使用（iPad / 飞行模式）
+
+站点是可离线启动的 PWA：`manifest.json` + `service-worker.js`，预缓存 21 个文件（约 791 KB）。
+
+- 导航请求只从预缓存取 `index.html`，保证外壳、脚本、数据同一版，不会新旧混用；
+- 同源静态资源缓存优先，跨域（B 站 / Supabase）完全不接管；
+- 缓存名带内容哈希，资源一变就换版本；新版本装好后右下角提示「有新版本 · 刷新」，不自动抢班；
+- 断网时底部挂状态条，外部链接标灰，点击给明确提示；
+- 云同步在离线时排队，`online` 事件后自动补传（`cloud.js` 已有逻辑）。
+
+安装与验收步骤、故障排查见 **[docs/offline.md](docs/offline.md)**。
+
+`#/offline` 的飞行离线包从 `content/` 现推顺序（域 → 专题 → 小节 → 该小节视频），
+不额外维护一份清单；收藏 / 已缓存 / 已看完存在 `ict.flight.v1`，只在本机，不参与云同步。
+
+「能不能让豆包自动批量收藏并缓存」的结论见 **[docs/automation.md](docs/automation.md)**：
+不能作为主方案，网站负责顺序与清单、官方 App 负责合法缓存。
+
 ## 云同步（可选）
 
 默认纯本地：进度存在浏览器 `localStorage`。填好 `assets/js/cloud-config.js` 后，
@@ -207,7 +238,9 @@ covers[] gaps version_note checked_at note
 ## 目录结构
 
 ```
-index.html                    应用外壳：侧栏 + #app + 七个脚本
+index.html                    应用外壳：侧栏 + #app + 脚本与 PWA 元信息
+manifest.json                 网页 App 清单（名称、图标、standalone、快捷方式）
+service-worker.js             预缓存与离线策略（由 tools/build-offline.py 生成）
 assets/css/base.css           设计系统（变量、shell、通用组件、响应式）
 assets/css/app.css            本平台新增组件（域卡片、知识图谱、小节流程、终端、状态面板）
 assets/js/data/bank.js        构建产物：题库
@@ -218,7 +251,10 @@ assets/js/lab-engine.js       状态机实验引擎（linux / sql / audit 三类
 assets/js/cloud-config.js     Supabase 连接配置（可公开的 URL 与 Publishable key）
 assets/js/cloud.js            可选模块：GitHub 登录与跨设备同步
 assets/js/views.js            各页面渲染
+assets/js/flight-pack.js      飞行离线包：顺序推导、收藏/缓存标记与本页渲染
+assets/js/offline.js          SW 注册、更新提示、离线状态条、外链拦截
 assets/js/app.js              hash 路由、会话、计时、实验交互、导入导出
+assets/icons/                 PWA 图标（由 tools/make-icons.py 生成）
 assets/vendor/supabase-js-2.118.0.js   自托管 SDK（钉死版本，MIT，不走 CDN）
 content/catalog.json          域 / 专题 / 知识图谱节点 / 资料
 content/sections.oe.json      学习小节（按域拆文件）
@@ -236,6 +272,12 @@ tools/check-resources.py      资料链接存活与元数据漂移核对（需 y
 tools/build-docs.py           生成 docs/resources.md 与 docs/labs.md
 tools/test-lab.mjs            实验引擎回归测试（headless Chrome 里跑真命令）
 tools/test-boot-without-cdn.mjs  断 CDN 启动回归（需要 Node + Chrome）
+tools/build-offline.py        生成 service-worker.js 的清单与版本哈希
+tools/check-offline.py        离线配置静态校验（manifest / 图标 / 清单 / 版本）
+tools/test-offline.mjs        断网回归：飞行模式下启动、答题、实验、外链提示
+tools/make-icons.py           生成 180 / 192 / 512 / maskable 图标（纯标准库）
+docs/offline.md               iPad 安装、飞行模式验收与视频缓存流程
+docs/automation.md            批量收藏/缓存自动化的可行性评估
 docs/resources.md             资料台账（生成）
 docs/labs.md                  实验说明（生成）
 ```
@@ -319,6 +361,11 @@ docs/labs.md                  实验说明（生成）
 - `oe-06-02`（firewalld 的两套配置）同样达标：主资料是阿里云图文，全文通读后标 `verified`，原文里往 `/proc` 追加 `ip_forward` 的写法错误记进了 `gaps`，并补了一条 zone 讲得更细的备用图文。
 - `oe-03-02`（systemd 与 journalctl）、`oe-05-02`（LVM 三层与 fstab 持久挂载）、`oe-06-01`（nmcli 与监听端口）三节也达到门槛：6 条主资料视频全部走完「妙记转写＋章节摘要」验收并标 `verified`，其中 3 条（`journalctl` 的 `-b`、LVM 的 `vgcreate`、`ss` 的 `-lntp`）原 `covers` 与转写不符，已按实际内容校正；备用图文在上一轮已补并全文通读。目前 45 节中真正达标的共 6 节（`oe-01-01`、`oe-01-02`、`oe-03-02`、`oe-05-02`、`oe-06-01`、`oe-06-02`）。
 - `tools/test-lab.mjs` 覆盖 18 条 chmod 写法 + 4 条实验判分路径 + 19 条文件/链接/归档用例 + 13 条网络用例 + 15 条软件包用例 + 14 条计划任务用例，本地与线上各跑一遍全绿。
+- 已升级为可离线启动的网页 App：manifest + Service Worker，预缓存 21 个文件（约 791 KB），
+  iPad 添加到主屏幕后飞行模式下可启动、答题、跑实验；断网回归 `tools/test-offline.mjs` 38 项全绿（断网启动、答题落盘、筛选交互、外链提示、版本更新）。
+- `#/offline` 飞行离线包：32 条已挂小节的视频按 域→专题→小节 排序（合计 4 小时 59 分），
+  支持未处理/已收藏/已缓存/已看完筛选、一键打开下一条未缓存、复制待缓存清单；
+  3 条未挂小节的视频单独放在「可选补充」。
 
 待补：
 

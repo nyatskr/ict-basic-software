@@ -1,0 +1,56 @@
+{
+  "id": "./",
+  "name": "基础软件赛道学习平台",
+  "short_name": "基础软件",
+  "description": "华为 ICT 大赛基础软件赛道备赛平台：openEuler / openGauss / 鲲鹏应用开发的知识图谱、理论题库、模拟实操与飞行离线包。",
+  "lang": "zh-CN",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "orientation": "any",
+  "background_color": "#f4f5f7",
+  "theme_color": "#16181d",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "飞行离线包",
+      "short_name": "离线包",
+      "description": "按学习顺序核对 32 条 B 站视频的收藏与缓存状态",
+      "url": "./index.html#/offline"
+    },
+    {
+      "name": "错题本",
+      "short_name": "错题",
+      "description": "复习做错的题目",
+      "url": "./index.html#/wrong/weak"
+    },
+    {
+      "name": "模拟实操",
+      "short_name": "实验",
+      "description": "浏览器内状态机实验",
+      "url": "./index.html#/labs"
+    }
+  ]
+}

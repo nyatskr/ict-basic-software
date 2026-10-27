@@ -51,6 +51,8 @@
       html = V.result();
     } else if (route === 'wrong') {
       html = V.wrong(parts[1] || 'weak');
+    } else if (route === 'offline') {
+      html = V.flightPack();
     } else if (route === 'browse') {
       if (keyChanged) browseState.topic = parts[1] && parts[1] !== 'all' ? parts[1] : 'all';
       html = V.browse(browseState.topic, browseState);
@@ -78,7 +80,9 @@
         ? '答题 · 基础软件赛道学习平台'
         : route === 'lab'
           ? '模拟实操 · 基础软件赛道学习平台'
-          : '基础软件赛道学习平台';
+          : route === 'offline'
+            ? '飞行离线包 · 基础软件赛道学习平台'
+            : '基础软件赛道学习平台';
 
     if (route === 'practice') {
       const s = LP.state.session;
@@ -119,6 +123,11 @@
     if (route === 'data') {
       const file = $('#import-file');
       if (file) file.addEventListener('change', onImportFile);
+    }
+
+    /* 离线包页要显示缓存版本：渲染时 SW 可能还没回话，补问一次 */
+    if (route === 'offline' && LP.offline && LP.offline.refresh) {
+      setTimeout(() => LP.offline.refresh(), 80);
     }
   }
 
@@ -1122,6 +1131,9 @@
       }
     },
   };
+
+  /* 飞行离线包的交互由 flight-pack.js 注册，避免把视频清单逻辑塞进路由文件 */
+  if (LP.flightActions) Object.assign(actions, LP.flightActions);
 
   document.addEventListener('click', (e) => {
     const el = e.target.closest('[data-act]');
