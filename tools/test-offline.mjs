@@ -164,8 +164,11 @@ if (!CHROME) {
   process.exit(2);
 }
 
-const server = await serve();
-const base = `http://127.0.0.1:${server.address().port}`;
+/* 设 BASE_URL 可直接跑线上站点：BASE_URL=https://nyatskr.github.io/ict-basic-software/ */
+const LIVE = process.env.BASE_URL ? process.env.BASE_URL.replace(/\/?$/, '/') : '';
+const server = LIVE ? null : await serve();
+const base = LIVE || `http://127.0.0.1:${server.address().port}`;
+if (LIVE) console.log('目标：' + base + '\n');
 
 const chrome = spawn(
   CHROME,
@@ -398,6 +401,9 @@ try {
   check('恢复网络后仍可用', await ready());
 
   /* ---------- 6. 更新流程：新版本不抢班，点刷新才换 ---------- */
+  if (LIVE) {
+    console.log('skip 更新流程（线上无法模拟重新部署）');
+  } else {
   deployTick = 1;
   await reload();
   const updateShown = await waitFor("!!document.querySelector('.netbar.update')", 12000, 300);
@@ -429,6 +435,7 @@ try {
       await cdp.eval(`!!(LP.getRecord(${JSON.stringify(answered.id)}) || {}).attempts`)
     );
   }
+  }
 
   check('控制台零错误', consoleErrors.length === 0, consoleErrors.slice(0, 3).join(' | '));
   check('无未捕获异常', exceptions.length === 0, exceptions.slice(0, 3).join(' | '));
@@ -438,7 +445,7 @@ try {
 } finally {
   try { ws.close(); } catch { /* 忽略 */ }
   chrome.kill();
-  server.close();
+  if (server) server.close();
 }
 
 console.log(failed ? `\n${failed} 项失败` : '\n全部通过');
